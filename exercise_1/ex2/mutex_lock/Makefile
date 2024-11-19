@@ -3,7 +3,7 @@
 EXECUTABLE := app
 
 CFLAGS := -Wall -Wextra -O0 -s
-LDFLAGS := -lpthread -lrt
+LDFLAGS := -lpthread
 CC := gcc
 
 BUILD_DIR := build

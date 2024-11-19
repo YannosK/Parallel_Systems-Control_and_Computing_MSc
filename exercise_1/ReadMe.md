@@ -9,3 +9,7 @@
     - [ ] compiler version 
 - [ ] always mention the inputs
 - [ ] always execute at least 5 times and report average
+
+## Questions
+
+- Should we use barriers to time the threads?

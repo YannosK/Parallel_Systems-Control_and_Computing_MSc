@@ -2,6 +2,7 @@ import sys
 import subprocess
 
 def run_make():
+
     result = subprocess.run(['make', 'clean'], text=True)
     if result.returncode != 0:
         print(f"Error: make clean exited with return code {result.returncode}")
@@ -11,7 +12,11 @@ def run_make():
         print(f"Error: make exited with return code {result.returncode}")
 
 def run_exec(arg):
-    result = subprocess.run(['./app', arg], text=True)
+
+    app = ['./app'] + arg
+
+    result = subprocess.run(app, text=True)
+
     if result.returncode != 0:
         print(f"Error: Program exited with return code {result.returncode}")
         if result.returncode == -11:
@@ -22,14 +27,19 @@ def run_exec(arg):
             print(f"Ran out of heap memory")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print('Usage: python3 runner.py <threadcount>')
+
+    if len(sys.argv) != 3:
+        print('Usage: python3 runner.py <threadcount> <iterations>')
         sys.exit(1)
 
-    threadcount = sys.argv[1]
+    arg = [sys.argv[1], sys.argv[2]]
 
-    print('\n******************\nBuild\n******************\n')
+    print()
+
+    print('\n**************************\nBuild\n**************************\n')
     run_make()
 
-    print('\n******************\nRun\n******************\n')
-    run_exec(threadcount)
+    print('\n**************************\nExecution\n**************************\n')
+    run_exec(arg)
+
+    print('\n')
