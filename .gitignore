@@ -1,3 +1,18 @@
 # python environments
 .env
 env/
+
+# python cache
+exercise_1/ex1/__pycache__/*
+
+# binary files
+exercise_1/ex1/bin/*
+
+# help code
+exercise_1/helpcode/*
+
+# data
+exercise_1/ex1/data/*
+
+#configuration
+exercise_1/ex1/conf.py
