@@ -5,7 +5,7 @@
 #include "timer.h"
 
 int serial(unsigned long long int throws, double *pi, double *time) {
-    srand(0);
+    unsigned int seed = 0;
 
     double start, end;
 
@@ -17,8 +17,8 @@ int serial(unsigned long long int throws, double *pi, double *time) {
     double x, y, square_distance;
 
     for(throw = 0; throw < throws; throw ++) {
-        x = 2.0 * rand() / RAND_MAX - 1;
-        y = 2.0 * rand() / RAND_MAX - 1;
+        x = 2.0 * rand_r(&seed) / RAND_MAX - 1;
+        y = 2.0 * rand_r(&seed) / RAND_MAX - 1;
 
         square_distance = x * x + y * y;
 

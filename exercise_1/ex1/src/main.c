@@ -23,11 +23,14 @@ int main(int argc, char *argv[]) {
     printf("Pi: %f, ", pi);
     printf("Time: %f\n", time);
 
-    parallel(throws, num_threads, &pi, &time);
+    if(parallel(throws, num_threads, &pi, &time) != 0) {
+        fprintf(stderr, "Error: parallel Monte Carlo failed.\n");
+        return 1;
+    }
 
     printf("Parallel Monte Carlo: ");
     printf("Pi: %f, ", pi);
-    printf("Time: %f", time);
+    printf("Time: %f\n", time);
 
     return 0;
 }

@@ -1,5 +1,11 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -p -pg -O0 -Iinclude -lpthread
+CFLAGS = -Wall -Wextra -p -pg -Iinclude -lpthread
+
+ifdef DEBUG
+	CFLAGS += -g -O0 -DDEBUG
+else
+	CFLAGS += -O2
+endif
 
 # Save binaries and object files in the bin/ directory
 BIN_DIR = bin

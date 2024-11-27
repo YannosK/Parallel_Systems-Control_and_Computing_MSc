@@ -15,6 +15,10 @@ void *thread_work(void *rank) {
     unsigned int seed = _rank;
     const unsigned long long int throws = throws_global / num_threads_global;
 
+#ifdef DEBUG
+    printf("\nThread %u: %llu throws, %u seed", _rank, throws, seed);
+#endif
+
     unsigned long long int throw;
     unsigned long long int throws_in_circle = 0;
 
@@ -34,9 +38,18 @@ void *thread_work(void *rank) {
 
     throws_in_circle *= 4;
 
+#ifdef DEBUG
+    printf("\nThread %u: trying to acquire the lock.", _rank);
+#endif
     pthread_mutex_lock(&mutex);
+#ifdef DEBUG
+    printf("\nThread %u: gets the lock.", _rank);
+#endif
     pi_global += throws_in_circle;
     pthread_mutex_unlock(&mutex);
+#ifdef DEBUG
+    printf("\nThread %u: release the lock.", _rank);
+#endif
 
     return NULL;
 }
@@ -57,8 +70,10 @@ int parallel(
         return 1;
     };
 
-    unsigned long int *thread_args =
-        calloc(num_threads, sizeof(unsigned long int));
+    unsigned long int *thread_args;
+    if((thread_args = calloc(num_threads, sizeof(unsigned long int))) == NULL) {
+        return 1;
+    };
 
     if(pthread_mutex_init(&mutex, NULL) != 0) {
         return 1;
@@ -81,6 +96,10 @@ int parallel(
         };
     }
 
+#ifdef DEBUG
+    printf("\nAll threads joined");
+#endif
+
     pi_global /= throws;
 
     free(thread_handles);
@@ -94,6 +113,10 @@ int parallel(
 
     *time = end - start;
     *pi = pi_global;
+
+#ifdef DEBUG
+    printf("\n\n");
+#endif
 
     return 0;
 }

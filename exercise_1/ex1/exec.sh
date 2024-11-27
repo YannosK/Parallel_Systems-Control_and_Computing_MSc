@@ -67,6 +67,7 @@ def run_programs(
                 )
                 output = output.stdout.decode('utf-8')
                 output = output.split("\n")
+                output = output[:-1] # remove last empty line
 
                 # Create csv file with data from execution
                 with open(file_path, "a") as f:
@@ -242,7 +243,7 @@ if __name__ == '__main__':
         print("[INFO] Running programs")
 
         iterations = 10
-        throws = [1e8]
+        throws = [1e9]
         thread_nums = [1, 2, 3, 4, 5, 6, 7, 8]
         exec_file_path = f"{save_exec_folder}/{time_string}.csv"
 
