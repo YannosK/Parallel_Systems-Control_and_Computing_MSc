@@ -8,6 +8,10 @@ else
 	CFLAGS += -O2
 endif
 
+ifdef OUTPUT
+	CFLAGS += -DOUTPUT
+endif
+
 # Save binaries and object files in the bin/ directory
 BIN_DIR = bin
 EXEC = $(BIN_DIR)/main
