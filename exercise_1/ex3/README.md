@@ -25,4 +25,56 @@ and they gather the timing results and the computed efficiencies in .csv files
     - **'solution_1'** has the code, build system and scripts for the local variable solution (1st solution) the problem.
     - **'solution_2'** has the code, build system and scripts for the junk injection solution (2nd solution) the problem.
 - internal structure of root folders
+    - **'src/"** has all the C source code, which is the main code of the implementations
+    - **'inc/"** all the included header files for the C source code
+    - **'build/"** the folder will be created if you build the project. Inside it there is the executable named 'app'
+    - **'results/'** created by the python script `results.py`. Inside it the .csv files with the timing and efficiency results, for various iterations and thread counts
 
+
+# Build and Run
+
+## Build with make
+
+The build system used is make.
+
+To clean all the produced binaries run
+```
+make clean
+```
+
+To build the executable, which will be stored inside the 'build/' folder run
+```
+make run
+```
+
+To run the executable go to the 'build/' folder and run it.
+See the needed arguments and add them accordingly (thread count and iterations).
+The expected and the actual values of the common array are printed on the terminal
+as well as the execution time
+```
+./app <threadnum> <iterations>
+```
+
+## Usage of scripts
+
+The scripting is done with python programs inside every root folder.
+
+To compile and run directly the program, run the following script
+```
+python3 runner.py <threadnum> <iterations>
+```
+
+To produce the results automatically run the following script.
+This one runs the `runner.py` script for various arguments and captures the output.
+More specifically it runs it for $10^1$ up to $10^6$ iterations
+for thread numbers ranging from $2^0=1$ thread up to $2^5=32$ threads.
+For every execution of the `runner.py` the console output is captured
+the expected values are compared to the actual ones
+and the execution time along with the calculated efficiencies
+are stored in .csv files in the 'results/' folder.
+If an expected value is different than the actual value then 'None' is stored in the corresponding .csv slot
+```
+python3 results.py
+```
+
+The `ex3_results_script.sh` runs all the `results.py` scripts inside the root folders
