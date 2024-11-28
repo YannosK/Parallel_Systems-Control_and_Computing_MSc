@@ -117,7 +117,7 @@ void *ThreadWork(void *rank)
     long my_rank = (long)rank;
     long long local_value = common_table[my_rank];
 
-    for (unsigned long i; i < iterations; i++)
+    for (unsigned long i = 0; i < iterations; i++)
         local_value++;
 
     common_table[my_rank] = local_value;

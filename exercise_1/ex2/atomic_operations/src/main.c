@@ -101,7 +101,7 @@ void *ThreadWork(void *rank)
     long my_rank = (long)rank;
     (void)my_rank;
 
-    for (unsigned long i; i < iterations; i++)
+    for (unsigned long i = 0; i < iterations; i++)
         atomic_fetch_add(&common, 1);
 
     return NULL;

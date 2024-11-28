@@ -13,7 +13,7 @@ def run_make():
 
 def run_exec(arg):
 
-    app = ['./app'] + arg
+    app = ['./build/app'] + arg
 
     result = subprocess.run(app, text=True)
 

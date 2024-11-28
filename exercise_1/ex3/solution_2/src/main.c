@@ -128,7 +128,7 @@ void *ThreadWork(void *rank)
     long my_rank = (long)rank;
     unsigned long my_index = my_rank * elements;
 
-    for (unsigned long i; i < iterations; i++)
+    for (unsigned long i = 0; i < iterations; i++)
     {
         common_table[my_index]++;
     }

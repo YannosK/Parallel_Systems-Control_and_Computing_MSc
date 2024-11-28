@@ -1,13 +1,37 @@
 import subprocess
 import re
 import csv
+import os
 from tqdm import tqdm
 
 def get_excution_times(threads, iterations):
+    '''
+    Runs the runner.py script to capture the execution time and check if expected values are the same with the calculated values
 
+    Args:
+        threads : number of threads
+        iterations : number of for loop iterations isnide the thread function
+
+    Returns:
+        The execution time or None if build failed or the expected values did not match the actual values
+    '''
+
+    # running runner.py and catching the output
     result = subprocess.run(['python3', 'runner.py', str(threads), str(iterations)], capture_output=True, text=True)
     output = result.stdout
 
+    # comparing actual with expected values
+    expected_el = re.search(r"Expected value of common table element:\s*([\d.]+)", output)
+    for i in range(int(threads)):
+        actual_el = re.search(rf"Actual value element\[{i}\]:\s*([\d.]+)", output)
+        if int(actual_el.group(1)) != int(expected_el.group(1)):
+            return None
+    expected_sum = re.search(r"Expected value of sum of common table elements:\s*([\d.]+)", output)
+    actual_sum = re.search(r"Actual value of sum of common table elements:\s*([\d.]+)", output)
+    if int(actual_sum.group(1)) != int(expected_sum.group(1)):
+        return None
+
+    # returning the execution time
     match = re.search(r"Elapsed time:\s*([\d.]+)", output)
     if match:
         return float(match.group(1))
@@ -57,7 +81,15 @@ if __name__ == "__main__":
     # Update csv
     ###############################################
 
-    with open("execution_times.csv", "w", newline="") as csvfile:
+    # checking that result directory and .csv exist - else we create them
+    result_dir = "results"
+    if not os.path.exists(result_dir):
+        os.makedirs(result_dir)
+    timings_csv = os.path.join(result_dir, "timings.csv")
+    efficiencies_csv = os.path.join(result_dir, "efficiencies.csv")
+
+    # filling in the execution times in timings.csv
+    with open(timings_csv, "w", newline="") as csvfile:
         csvwriter = csv.writer(csvfile)
 
         thread_header = []
@@ -68,7 +100,8 @@ if __name__ == "__main__":
         for timing_result in timing_results:
             csvwriter.writerow(timing_result)
 
-    with open("efficiency.csv", "w", newline="") as csvfile:
+    # filling in the efficiencies in efficiencies.csv
+    with open(efficiencies_csv, "w", newline="") as csvfile:
         csvwriter = csv.writer(csvfile)
 
         thread_header = []

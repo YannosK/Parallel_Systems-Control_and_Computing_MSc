@@ -122,11 +122,9 @@ void *ThreadWork(void *rank)
     long my_rank = (long)rank;
     (void)my_rank;
 
-    for (unsigned long i; i < iterations; i++)
+    for (unsigned long i = 0; i < iterations; i++)
     {
-        // pthread_mutex_lock(&common_mutex);
         common_table[my_rank]++;
-        // pthread_mutex_unlock(&common_mutex);
     }
 
     return NULL;

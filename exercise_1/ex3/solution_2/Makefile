@@ -1,29 +1,29 @@
 .PHONY: all clean
 
-EXECUTABLE := app
-
-CFLAGS := -Wall -Wextra -O0 -s
+CFLAGS := -Wall -Wextra -O2 -s
 LDFLAGS := -lpthread
 CC := gcc
 
 BUILD_DIR := build
+EXECUTABLE := $(BUILD_DIR)/app
 SRC_DIR := src
 INC_DIR := inc
-SRC := $(SRC_DIR)/main.c
-OBJ := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRC))
+SRC := $(wildcard $(SRC_DIR)/*.c)
+OBJ := $(patsubst %.c, $(BUILD_DIR)/%.o, $(SRC))
 
-all: $(EXECUTABLE)
+all: $(BUILD_DIR) $(EXECUTABLE)
 	@echo "Build finished"
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+$(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
 
 $(EXECUTABLE): $(OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
+
 clean:
 	rm -rf $(BUILD_DIR)
 	@echo "Cleaned build dir"
-
-
