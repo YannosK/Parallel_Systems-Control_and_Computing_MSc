@@ -5,6 +5,7 @@ import re
 import conf
 import time
 import argparse
+import numpy as np
 import pandas as pd
 import subprocess
 import matplotlib.pyplot as plt
@@ -17,7 +18,7 @@ if conf.font_path != "":
 
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = prop.get_name()
-    plt.rcParams.update({'font.size': 12})
+    plt.rcParams.update({'font.size': 11})
 
 
 # Extract information from program's output
@@ -67,7 +68,7 @@ def run_programs(
                 )
                 output = output.stdout.decode('utf-8')
                 output = output.split("\n")
-                output = output[:-1] # remove last empty line
+                output = output[:-1]  # remove last empty line
 
                 # Create csv file with data from execution
                 with open(file_path, "a") as f:
@@ -98,19 +99,31 @@ def plot_data(
     data = pd.read_csv(read_data_path, delimiter=";")
     data_grouped = data.groupby(["mode", "threads"]).agg(
         time=("time(s)", "mean"),
-        time_std=("time(s)", "std")
+        time_max=("time(s)", "max"),
+        time_min=("time(s)", "min")
     )
 
     # Plot Data
     fig, ax = plt.subplots()
 
+    textwidth_latex = 398.33858
+    fig_size_inches =  textwidth_latex / 72
+    golden_ratio = (1 + np.sqrt(5)) / 2
+    fig.set_size_inches(fig_size_inches, fig_size_inches / golden_ratio)
+
     for mode in data_grouped.index.levels[0]:
+        data_plot = data_grouped.loc[mode]
+
+        yerr_min = np.absolute(data_plot["time"] - data_plot["time_min"])
+        yerr_max = np.absolute(data_plot["time"] - data_plot["time_max"])
+        yerr = np.stack([yerr_min.values, yerr_max.values])
+
         ax.errorbar(
-            x=data_grouped.loc[mode].index,
-            y=data_grouped.loc[mode]["time"],
+            x=data_plot.index,
+            y=data_plot["time"],
             label=mode.capitalize(),
             ms=4,
-            yerr=data_grouped.loc[mode]["time_std"],
+            yerr=yerr,
             fmt="o",
             elinewidth=1.2,
             capthick=1.2,
