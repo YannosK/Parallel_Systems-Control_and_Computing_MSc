@@ -7,6 +7,11 @@ exercise_1/ex1/__pycache__/*
 
 # binary files
 exercise_1/ex1/bin/*
+exercise_1/ex2/mutex_lock/build/*
+exercise_1/ex2/atomic_operations/build/*
+exercise_1/ex3/initial/build/*
+exercise_1/ex3/solution_1/build/*
+exercise_1/ex3/solution_2/build/*
 
 # help code
 exercise_1/helpcode/*
