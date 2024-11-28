@@ -5,8 +5,6 @@
 #include "timer.h"
 
 int serial(unsigned long long int throws, double *pi, double *time) {
-    unsigned int seed = 0;
-
     double start, end;
 
     GET_TIME(start);
@@ -14,6 +12,7 @@ int serial(unsigned long long int throws, double *pi, double *time) {
     unsigned long long int throw;
     unsigned long long int throws_in_circle = 0;
 
+    unsigned int seed = 0;
     double x, y, square_distance;
 
     for(throw = 0; throw < throws; throw ++) {
@@ -27,7 +26,7 @@ int serial(unsigned long long int throws, double *pi, double *time) {
         }
     }
 
-    *pi = 4 * (double)throws_in_circle / throws;
+    *pi = 4.0 * throws_in_circle / throws;
 
     GET_TIME(end);
 

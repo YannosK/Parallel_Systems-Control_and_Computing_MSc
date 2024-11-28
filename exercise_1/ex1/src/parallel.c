@@ -25,7 +25,6 @@ void *thread_work(void *rank) {
     double x, y, square_distance;
 
     for(throw = 0; throw < throws; throw ++) {
-
         x = 2.0 * rand_r(&seed) / RAND_MAX - 1;
         y = 2.0 * rand_r(&seed) / RAND_MAX - 1;
 

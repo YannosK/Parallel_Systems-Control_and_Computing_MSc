@@ -196,7 +196,7 @@ def results_to_latex(
         save_table_dir = f"{root_data_table_folder}/{date}"
         os.makedirs(save_table_dir, exist_ok=True)
 
-        file_path = f"{save_table_dir}/{time}.txt"
+        file_path = f"{save_table_dir}/{time}.tex"
         with open(file_path, "w") as f:
             f.write(latex_table)
     else:
@@ -213,7 +213,7 @@ parser.add_argument(
     "--execute",
     type=int,
     default=0,
-    help="Execute the serial and parallel programs and plot the data."
+    help="Execute the serial and parallel programs, plot the data and create LaTeX table."
 )
 parser.add_argument(
     "--plot",
@@ -251,6 +251,9 @@ if __name__ == '__main__':
 
         print("[INFO] Plotting data")
         plot_data(exec_file_path)
+
+        print("[INFO] Printing table")
+        results_to_latex(exec_file_path)
     else:
         if (args.plot != ""):
             print("[INFO] Plotting data")
