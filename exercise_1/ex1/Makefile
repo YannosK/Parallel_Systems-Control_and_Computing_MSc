@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -p -pg -Iinclude -lpthread
+CFLAGS = -Wall -Wextra -p -pg -Iinclude
 
 ifdef DEBUG
 	CFLAGS += -g -O0 -DDEBUG
