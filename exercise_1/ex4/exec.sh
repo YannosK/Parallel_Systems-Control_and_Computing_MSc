@@ -36,6 +36,29 @@ root_data_plot_folder = f"{root_data_folder}/plot"
 root_data_table_folder = f"{root_data_folder}/table"
 
 
+def compile_executable(
+    define: str,
+):
+    """Compile the program with the given define to specify the policy.
+
+    Args:
+        define (str): The preprocessor directive to specify the policy.
+    """
+    output = subprocess.run(
+        [
+            "make",
+            "-B",
+            "-C", f"{root_ex_folder}",
+            "DEFINES=" f"\"-D{define}\"",
+        ],
+        capture_output=True,
+    )
+
+    # output = output.stdout.decode('utf-8')
+    # output = output.split("\n")[0:-1]
+    # print(output)
+
+
 def run_programs(
     iterations: int,
     thread_nums: list[int],
@@ -47,9 +70,9 @@ def run_programs(
     {
         "initial_keys": 1000,
         "operations_num": 500000,
-        "search_presentage": 0.99,
-        "insert_presentage": 0.005,
-        "delete_presentage": 0.005
+        "search_percentage": 0.99,
+        "insert_percentage": 0.005,
+        "delete_percentage": 0.005
     }.
 
     Args:
@@ -64,15 +87,27 @@ def run_programs(
             "threads;"
             "initial_keys;"
             "operations_num;"
-            "search_presentage;"
-            "insert_presentage;"
-            "delete_presentage;"
+            "search_percentage;"
+            "insert_percentage;"
+            "delete_percentage;"
             "time(s);"
             "\n"
         )
 
     for config in configurations:
         for thread_num in thread_nums:
+
+            print(
+                " " * len("[INFO] ") +
+                "-t", f"{thread_num}",
+                "-k", f"{config['initial_keys']}",
+                "-o", f"{config['operations_num']}",
+                "-s", f"{config['search_percentage']}",
+                "-i", f"{config['insert_percentage']}",
+                "-d", f"{config['delete_percentage']}",
+                f" ({iterations} iterations)"
+            )
+
             for _ in range(iterations):
                 # Execute program and catch output
                 output = subprocess.run(
@@ -81,9 +116,9 @@ def run_programs(
                         "-t", f"{thread_num}",
                         "-k", f"{config['initial_keys']}",
                         "-o", f"{config['operations_num']}",
-                        "-s", f"{config['search_presentage']}",
-                        "-i", f"{config['insert_presentage']}",
-                        "-d", f"{config['delete_presentage']}",
+                        "-s", f"{config['search_percentage']}",
+                        "-i", f"{config['insert_percentage']}",
+                        "-d", f"{config['delete_percentage']}",
                     ],
                     capture_output=True,
                 )
@@ -94,13 +129,13 @@ def run_programs(
 
                 # Create csv file with data from execution
                 with open(file_path, "a") as f:
-                    # Theads and configuration
+                    # Threads and configuration
                     f.write(f"{thread_num};")
                     f.write(f"{config['initial_keys']};")
                     f.write(f"{config['operations_num']};")
-                    f.write(f"{config['search_presentage']};")
-                    f.write(f"{config['insert_presentage']};")
-                    f.write(f"{config['delete_presentage']};")
+                    f.write(f"{config['search_percentage']};")
+                    f.write(f"{config['insert_percentage']};")
+                    f.write(f"{config['delete_percentage']};")
 
                     for line in output:
                         if time_regex.search(line):
@@ -113,7 +148,7 @@ def plot_data(
     read_data_path: str
 ):
     """Plot data from csv file. Each line of the csv file should have the following format:
-    threads;initial_keys;operations_num;search_presentage;insert_presentage;delete_presentage;time(s). The first line is the header.
+    threads;initial_keys;operations_num;search_percentage;insert_percentage;delete_percentage;time(s). The first line is the header.
 
     Args:
         read_data_path (str): The path to the csv file with the data.
@@ -126,12 +161,12 @@ def plot_data(
         columns=[
             "initial_keys",
             "operations_num",
-            "insert_presentage",
-            "delete_presentage"
+            "insert_percentage",
+            "delete_percentage"
         ]
     )
 
-    data_grouped = data.groupby(["threads", "search_presentage"]).agg(
+    data_grouped = data.groupby(["threads", "search_percentage"]).agg(
         time=("time(s)", "mean"),
         time_max=("time(s)", "max"),
         time_min=("time(s)", "min")
@@ -145,12 +180,12 @@ def plot_data(
     golden_ratio = (1 + np.sqrt(5)) / 2
     fig.set_size_inches(fig_size_inches, fig_size_inches / golden_ratio)
 
-    search_presentages = data_grouped.index.levels[1]
+    search_percentages = data_grouped.index.levels[1]
 
-    for search_presentage in search_presentages:
+    for search_percentage in search_percentages:
         data_plot = data_grouped.reset_index()
-        data_plot = data_plot[data_plot["search_presentage"]
-                              == search_presentage]
+        data_plot = data_plot[data_plot["search_percentage"]
+                              == search_percentage]
 
         yerr_min = np.absolute(data_plot["time"] - data_plot["time_min"])
         yerr_max = np.absolute(data_plot["time"] - data_plot["time_max"])
@@ -159,7 +194,7 @@ def plot_data(
         ax.errorbar(
             x=data_plot["threads"],
             y=data_plot["time"],
-            label=f"{search_presentage * 100}% Member",
+            label=f"{search_percentage * 100}% Member",
             ms=4,
             yerr=yerr,
             fmt="o",
@@ -210,7 +245,7 @@ def results_to_latex(
     read_data_path: str
 ):
     """Save the data from the csv file to a latex table.
-    The mean time is used to caclulate the speedup and efficiency.
+    The mean time is used to calculate the speedup and efficiency.
 
     Args:
         read_data_path (str): The path to the csv file with the data.
@@ -225,7 +260,7 @@ def results_to_latex(
     ).agg(
         time=("time(s)", "mean")
     ).reset_index().sort_values(
-        by=["search_presentage", "threads"]
+        by=["search_percentage", "threads"]
     )
 
     timestamp = timestamp_from_path.search(read_data_path)
@@ -248,7 +283,7 @@ def results_to_latex(
         print("[ERROR] Could not extract timestamp from file path")
 
 
-# Parse arguments by creatting a parser
+# Parse arguments by creating a parser
 parser = argparse.ArgumentParser(
     description="Run program with different configuration, save data to csv file and produce tables.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -276,55 +311,69 @@ parser.add_argument(
 if __name__ == '__main__':
     args = parser.parse_args()
 
+    defines_list = [
+        "DEFAULT",
+        "READER_PRIORITY_POLICY",
+        "WRITER_PRIORITY_POLICY"
+    ]
+
+    iterations = 2
+    thread_nums = [1, 2, 4, 8]
+
+    initial_keys = 1000
+    operations_num = 500000
+    configurations = [
+        {
+            "initial_keys": initial_keys,
+            "operations_num": operations_num,
+            "search_percentage": 0.999,
+            "insert_percentage": 0.0005,
+            "delete_percentage": 0.0005
+        },
+        {
+            "initial_keys": initial_keys,
+            "operations_num": operations_num,
+            "search_percentage": 0.95,
+            "insert_percentage": 0.025,
+            "delete_percentage": 0.025
+        },
+        {
+            "initial_keys": initial_keys,
+            "operations_num": operations_num,
+            "search_percentage": 0.90,
+            "insert_percentage": 0.05,
+            "delete_percentage": 0.05
+        }
+    ]
+
     if (args.execute == 1):
-        # Get time stamp
-        named_tuple = time.localtime()
-        date_string = time.strftime("%Y-%m-%d", named_tuple)
-        time_string = time.strftime("%H-%M-%S", named_tuple)
+        for define in defines_list:
+            compile_executable(define)
 
-        save_exec_folder = f"{root_data_exec_folder}/{date_string}"
-        os.makedirs(save_exec_folder, exist_ok=True)
+            # Get time stamp
+            named_tuple = time.localtime()
+            date_string = time.strftime("%Y-%m-%d", named_tuple)
+            time_string = time.strftime("%H-%M-%S", named_tuple)
 
-        print("[INFO] Running programs")
+            save_exec_folder = f"{root_data_exec_folder}/{date_string}"
+            os.makedirs(save_exec_folder, exist_ok=True)
 
-        iterations = 10
-        thread_nums = [1, 2, 3, 4, 5, 6, 7, 8]
+            print(f"[INFO] Running programs with policy: {define}")
 
-        initial_keys = 1000
-        operations_num = 500000
-        configurations = [
-            {
-                "initial_keys": initial_keys,
-                "operations_num": operations_num,
-                "search_presentage": 0.999,
-                "insert_presentage": 0.0005,
-                "delete_presentage": 0.0005
-            },
-            {
-                "initial_keys": initial_keys,
-                "operations_num": operations_num,
-                "search_presentage": 0.95,
-                "insert_presentage": 0.025,
-                "delete_presentage": 0.025
-            },
-            {
-                "initial_keys": initial_keys,
-                "operations_num": operations_num,
-                "search_presentage": 0.90,
-                "insert_presentage": 0.05,
-                "delete_presentage": 0.05
-            }
-        ]
+            exec_file_path = f"{save_exec_folder}/{time_string}-{define.lower()}.csv"
 
-        exec_file_path = f"{save_exec_folder}/{time_string}.csv"
+            run_programs(
+                iterations,
+                thread_nums,
+                configurations,
+                exec_file_path
+            )
 
-        run_programs(iterations, thread_nums, configurations, exec_file_path)
+            print("[INFO] Plotting data")
+            plot_data(exec_file_path)
 
-        print("[INFO] Plotting data")
-        plot_data(exec_file_path)
-
-        print("[INFO] Printing table")
-        results_to_latex(exec_file_path)
+            print("[INFO] Printing table")
+            results_to_latex(exec_file_path)
     else:
         if (args.plot != ""):
             print("[INFO] Plotting data")

@@ -69,12 +69,16 @@ int member(int value) {
 
     if(temp == NULL || temp->data > value) {
 #ifdef DEBUG
-        printf("%d is not in the list\n", value);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf("MEMBER(): %d is not in the list\n", value);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 #endif
         return 0;
     } else {
 #ifdef DEBUG
-        printf("%d is in the list\n", value);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf("MEMBER(): %d is in the list\n", value);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 #endif
         return 1;
     }
@@ -95,13 +99,17 @@ int delete(int value) {
         if(pred == NULL) { /* first element in list */
             head = curr->next;
 #ifdef DEBUG
-            printf("Freeing %d\n", value);
+            printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+            printf("DELETE(): Freeing %d\n", value);
+            printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 #endif
             free(curr);
         } else {
             pred->next = curr->next;
 #ifdef DEBUG
-            printf("Freeing %d\n", value);
+            printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+            printf("DELETE(): Freeing %d\n", value);
+            printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 #endif
             free(curr);
         }
@@ -122,14 +130,18 @@ void free_list(void) {
     following = current->next;
     while(following != NULL) {
 #ifdef DEBUG
-        printf("Freeing %d\n", current->data);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf("FREE_LIST(): Freeing %d\n", current->data);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 #endif
         free(current);
         current = following;
         following = current->next;
     }
 #ifdef DEBUG
-    printf("Freeing %d\n", current->data);
+    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf("FREE_LIST(): Freeing %d\n", current->data);
+    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 #endif
     free(current);
 }

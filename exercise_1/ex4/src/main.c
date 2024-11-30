@@ -4,6 +4,7 @@
 
 #include "linkedlist.h"
 #include "my_rand.h"
+#include "rwlock.h"
 #include "timer.h"
 
 /* Random ints are less than MAX_KEY */
@@ -16,7 +17,7 @@ double insert_percent;
 double search_percent;
 double delete_percent;
 
-pthread_rwlock_t rwlock;
+rwlock_t rwlock;
 pthread_mutex_t count_mutex;
 
 int member_count = 0, insert_count = 0, delete_count = 0;
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]) {
     thread_handles = malloc(thread_count * sizeof(pthread_t));
 
     pthread_mutex_init(&count_mutex, NULL);
-    pthread_rwlock_init(&rwlock, NULL);
+    rwlock_init(&rwlock);
 
     double start, finish;
     GET_TIME(start);
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     free_list();
-    pthread_rwlock_destroy(&rwlock);
+    rwlock_destroy(&rwlock);
     pthread_mutex_destroy(&count_mutex);
     free(thread_handles);
 
@@ -126,19 +127,31 @@ void *thread_work(void *rank) {
         which_op = my_drand(&seed);
         val = my_rand(&seed) % MAX_KEY;
         if(which_op < search_percent) {
-            pthread_rwlock_rdlock(&rwlock);
+            if(rwlock_rdlock(&rwlock) != 0) {
+                exit(EXIT_FAILURE);
+            };
             member(val);
-            pthread_rwlock_unlock(&rwlock);
+            if(rwlock_unlock(&rwlock) != 0) {
+                exit(EXIT_FAILURE);
+            }
             my_member_count++;
         } else if(which_op < search_percent + insert_percent) {
-            pthread_rwlock_wrlock(&rwlock);
+            if(rwlock_wrlock(&rwlock) != 0) {
+                exit(EXIT_FAILURE);
+            };
             insert(val);
-            pthread_rwlock_unlock(&rwlock);
+            if(rwlock_unlock(&rwlock) != 0) {
+                exit(EXIT_FAILURE);
+            };
             my_insert_count++;
         } else { /* delete */
-            pthread_rwlock_wrlock(&rwlock);
+            if(rwlock_wrlock(&rwlock) != 0) {
+                exit(EXIT_FAILURE);
+            };
             delete(val);
-            pthread_rwlock_unlock(&rwlock);
+            if(rwlock_unlock(&rwlock) != 0) {
+                exit(EXIT_FAILURE);
+            };
             my_delete_count++;
         }
     }

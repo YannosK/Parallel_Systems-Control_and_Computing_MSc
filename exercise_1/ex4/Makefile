@@ -1,15 +1,17 @@
+# $(DEFINES) variable can be set to either one of the following or any combination of them:
+# -DOUTPUT: Enable output mode
+# -DDEFAULR: Enable default implementation of read-write lock (pthread_rwlock_t)
+# -DREADER_PRIORITY_POLICY: Enable custom implementation of read-write lock that prioritizes readers
+# -DWRITER_PRIORITY_POLICY: Enable custom implementation of read-write lock that prioritizes writers
+
 CC = gcc
 LIBS = -pthread
-CFLAGS = -Wall -Wextra -p -pg -Iinclude
+CFLAGS = -Wall -Wextra -p -pg -Iinclude $(DEFINES)
 
 ifdef DEBUG
 	CFLAGS += -g -O0 -DDEBUG
 else
 	CFLAGS += -O2
-endif
-
-ifdef OUTPUT
-	CFLAGS += -DOUTPUT
 endif
 
 # Save binaries and object files in the bin/ directory
