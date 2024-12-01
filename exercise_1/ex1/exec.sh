@@ -172,7 +172,7 @@ def results_to_latex(
     read_data_path: str
 ):
     """Save the data from the csv file to a latex table.
-    The mean time is used to caclulate the speedup and efficiency.
+    The mean time is used to calculate the speedup and efficiency.
 
     Args:
         read_data_path (str): The path to the csv file with the data.
@@ -216,7 +216,7 @@ def results_to_latex(
         print("[ERROR] Could not extract timestamp from file path")
 
 
-# Parse arguments by creatting a parser
+# Parse arguments by creating a parser
 parser = argparse.ArgumentParser(
     description="Run program with different throws and thread numbers and, save data to csv file and produce tables.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
