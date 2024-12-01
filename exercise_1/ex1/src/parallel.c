@@ -59,8 +59,6 @@ int parallel(
 ) {
     double start, end;
 
-    GET_TIME(start);
-
     throws_global = throws;
     num_threads_global = num_threads;
 
@@ -79,6 +77,8 @@ int parallel(
     };
 
     unsigned long int thread;
+
+    GET_TIME(start);
 
     for(thread = 0; thread < num_threads; thread++) {
         thread_args[thread] = thread;
@@ -101,14 +101,14 @@ int parallel(
 
     pi_global /= throws;
 
+    GET_TIME(end);
+
     free(thread_handles);
     free(thread_args);
 
     if(pthread_mutex_destroy(&mutex) != 0) {
         return 1;
     }
-
-    GET_TIME(end);
 
     *time = end - start;
     *pi = pi_global;

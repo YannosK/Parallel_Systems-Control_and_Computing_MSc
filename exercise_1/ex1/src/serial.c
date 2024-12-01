@@ -7,13 +7,13 @@
 int serial(unsigned long long int throws, double *pi, double *time) {
     double start, end;
 
-    GET_TIME(start);
-
     unsigned long long int throw;
     unsigned long long int throws_in_circle = 0;
 
     unsigned int seed = 0;
     double x, y, square_distance;
+
+    GET_TIME(start);
 
     for(throw = 0; throw < throws; throw ++) {
         x = 2.0 * rand_r(&seed) / RAND_MAX - 1;
