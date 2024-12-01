@@ -2,7 +2,7 @@ import subprocess
 import re
 import csv
 import os
-from tqdm import tqdm
+from tqdm import tqdm # type: ignore
 
 def get_excution_times(threads, iterations):
     '''
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     ###############################################
 
     runs = 10   # number of runs for each execution
-    threads = [1, 2, 4, 8, 16, 32] # number of threads
+    # threads = [1, 2, 4, 8, 16, 32] # number of threads
+    threads = [1, 2, 3, 4, 5, 6, 7, 8] # number of threads
     max_iterations = 6 # maximum exponent of iterations of for loops of C code threads (it is decimal exponent)
 
     ###############################################
@@ -60,7 +61,7 @@ if __name__ == "__main__":
         thread_times = []
         thread_efficiencies = []
         for thread in threads:
-
+            
             run_times = []
             for j in tqdm(range(runs), desc=f'{thread} threads, {iterations} iterations'):
                 run_times.append(get_excution_times(thread, iterations))

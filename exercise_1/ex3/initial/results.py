@@ -49,7 +49,8 @@ if __name__ == "__main__":
     ###############################################
 
     runs = 10   # number of runs for each execution
-    threads = [1, 2, 4, 8, 16, 32] # number of threads
+    # threads = [1, 2, 4, 8, 16, 32] # number of threads
+    threads = [1, 2, 3, 4, 5, 6, 7, 8] # number of threads
     max_iterations = 6 # maximum exponent of iterations of for loops of C code threads (it is decimal exponent)
 
     ###############################################
