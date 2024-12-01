@@ -51,8 +51,16 @@ if __name__ == "__main__":
     & {Val_1}
     % 2 Threads 
     & {Val_2}
+    % 3 Threads 
+    & {Val_3}
     % 4 Threads 
     & {Val_4}
+    % 5 Threads 
+    & {Val_5}
+    % 6 Threads 
+    & {Val_6}
+    % 7 Threads 
+    & {Val_7}
     % 8 Threads 
     & {Val_8}
     \\\\
@@ -68,10 +76,14 @@ if __name__ == "__main__":
             tex_block = template_block.format(
                 # Iterations=string_to_power_of_ten(value_row[0]), # choose this for exponent notation
                 Iterations=value_row[0], # choose this for full values
-                Val_1="{:.7f}".format(float(value_row[1])),
-                Val_2="{:.7f}".format(float(value_row[2])),
-                Val_4="{:.7f}".format(float(value_row[3])),
-                Val_8="{:.7f}".format(float(value_row[4]))
+                Val_1="{:.0f}".format(1000000*float(value_row[1])),
+                Val_2="{:.0f}".format(1000000*float(value_row[2])),
+                Val_3="{:.0f}".format(1000000*float(value_row[3])),
+                Val_4="{:.0f}".format(1000000*float(value_row[4])),
+                Val_5="{:.0f}".format(1000000*float(value_row[5])),
+                Val_6="{:.0f}".format(1000000*float(value_row[6])),
+                Val_7="{:.0f}".format(1000000*float(value_row[7])),
+                Val_8="{:.0f}".format(1000000*float(value_row[8]))
             ).strip()  # Remove extra newlines at the start and end of the block
             tex_file.write("\t" + tex_block + "\n")
 

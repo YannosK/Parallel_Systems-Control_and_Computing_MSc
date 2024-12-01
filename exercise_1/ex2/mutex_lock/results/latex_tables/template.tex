@@ -1,57 +1,61 @@
-\begin{tblr}{
-    width=1.0\textwidth,
-    colspec={
-        Q[si={table-format=[6.0], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-        Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
-    },
-    row{1-3} = {guard},
-    }
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \toprule
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \SetCell[r=1,c=9]{c,m} Mutex Lock Implementation Results
-    &&&&&&&&
-    \\
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \hline
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \SetCell[r=2]{c,m} Iterations
-    & \SetCell[c=2]{c} 1 Thread &
-    & \SetCell[c=2]{c} 2 Threads &
-    & \SetCell[c=2]{c} 4 Threads &
-    & \SetCell[c=2]{c} 8 Threads &
-    \\
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \cmidrule[lr]{2-3}
-    \cmidrule[lr]{4-5}
-    \cmidrule[lr]{6-7}
-    \cmidrule[lr]{8-9}
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    & Time (\si{\second}) & Efficiency 
-    & Time (\si{\second}) & Efficiency 
-    & Time (\si{\second}) & Efficiency 
-    & Time (\si{\second}) & Efficiency 
-    \\
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \midrule
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % PLACE GENERATED CODE HERE
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \bottomrule
-\end{tblr}
+% \begin{tblr}{
+%     width=1.0\textwidth,
+%     colspec={
+%         Q[si={table-format=[6.0], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%         Q[si={table-format=[1.3], table-auto-round},m,c,co=1]
+%     },
+%     row{1-3} = {guard},
+%     }
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \toprule
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \SetCell[r=1,c=9]{c,m} Mutex Lock Implementation Results
+%     &&&&&&&&
+%     \\
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \hline
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \SetCell[r=2]{c,m} Iterations
+%     & \SetCell[c=2]{c} 1 Thread &
+%     & \SetCell[c=2]{c} 2 Threads &
+%     & \SetCell[c=2]{c} 4 Threads &
+%     & \SetCell[c=2]{c} 8 Threads &
+%     \\
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \cmidrule[lr]{2-3}
+%     \cmidrule[lr]{4-5}
+%     \cmidrule[lr]{6-7}
+%     \cmidrule[lr]{8-9}
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     & Time (\si{\second}) & Efficiency 
+%     & Time (\si{\second}) & Efficiency 
+%     & Time (\si{\second}) & Efficiency 
+%     & Time (\si{\second}) & Efficiency 
+%     \\
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \midrule
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     % PLACE GENERATED CODE HERE
+%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \bottomrule
+% \end{tblr}
 
 
 \begin{tblr}{
     width=1.0\textwidth,
     colspec={
         Q[m,r,co=1]
+        Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
+        Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
+        Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
+        Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
         Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
         Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
         Q[si={table-format=[1.6], table-auto-round},m,c,co=1]
@@ -66,7 +70,11 @@
     Iterations &
     1 Thread  &
     2 Threads &
+    3 Thread  &
     4 Threads &
+    5 Thread  &
+    6 Thread  &
+    7 Thread  &
     8 Threads \\
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \midrule

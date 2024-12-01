@@ -1,0 +1,1 @@
+font_path = "/usr/share/fonts/"
