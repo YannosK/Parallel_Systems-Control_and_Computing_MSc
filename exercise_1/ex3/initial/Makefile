@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CFLAGS := -Wall -Wextra -O2 -s
+CFLAGS := -Wall -Wextra -O0 -s
 LDFLAGS := -lpthread
 CC := gcc
 

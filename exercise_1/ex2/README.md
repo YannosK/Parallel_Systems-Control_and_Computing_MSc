@@ -19,7 +19,7 @@ and they gather the timing results and the computed efficiencies in .csv files
 
 - root folders
     - **'mutex_lock/'** has the code, build system and scripts for the mutex lock implementation.
-    - **'mutex_lock/'** has the code, build system and scripts for the atomic operations implementation.
+    - **'atomic_oprtations/'** has the code, build system and scripts for the atomic operations implementation.
 - internal structure of root folders
     - **'src/"** has all the C source code, which is the main code of the implementations
     - **'inc/"** all the included header files for the C source code
