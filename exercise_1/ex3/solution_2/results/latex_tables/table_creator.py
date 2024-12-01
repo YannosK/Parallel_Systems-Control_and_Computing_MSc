@@ -51,8 +51,16 @@ if __name__ == "__main__":
     & {Val_1}
     % 2 Threads 
     & {Val_2}
+    % 3 Threads 
+    & {Val_3}
     % 4 Threads 
     & {Val_4}
+    % 5 Threads 
+    & {Val_5}
+    % 6 Threads 
+    & {Val_6}
+    % 7 Threads 
+    & {Val_7}
     % 8 Threads 
     & {Val_8}
     \\\\
@@ -70,8 +78,12 @@ if __name__ == "__main__":
                 Iterations=value_row[0], # choose this for full values
                 Val_1="{:.7f}".format(float(value_row[1])),
                 Val_2="{:.7f}".format(float(value_row[2])),
-                Val_4="{:.7f}".format(float(value_row[3])),
-                Val_8="{:.7f}".format(float(value_row[4]))
+                Val_3="{:.7f}".format(float(value_row[3])),
+                Val_4="{:.7f}".format(float(value_row[4])),
+                Val_5="{:.7f}".format(float(value_row[5])),
+                Val_6="{:.7f}".format(float(value_row[6])),
+                Val_7="{:.7f}".format(float(value_row[7])),
+                Val_8="{:.7f}".format(float(value_row[8]))
             ).strip()  # Remove extra newlines at the start and end of the block
             tex_file.write("\t" + tex_block + "\n")
 

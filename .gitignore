@@ -4,6 +4,8 @@ env/
 
 # python cache
 exercise_1/ex1/__pycache__/*
+exercise_1/ex2/__pycache__/*
+exercise_1/ex3/__pycache__/*
 
 # binary files
 exercise_1/ex1/bin/*
@@ -21,3 +23,5 @@ exercise_1/ex1/data/*
 
 #configuration
 exercise_1/ex1/conf.py
+exercise_1/ex2/conf.py
+exercise_1/ex3/conf.py
