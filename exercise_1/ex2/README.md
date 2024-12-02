@@ -25,10 +25,11 @@ and they gather the timing results and the computed efficiencies in .csv files
     - **'inc/"** all the included header files for the C source code
     - **'build/"** the folder will be created if you build the project. Inside it there is the executable named 'app'
     - **'results/'** created by the python script `results.py`. Inside it the .csv files with the timing and efficiency results, for various iterations and thread counts
+        - **'latex_tables/'** contains the python script `table_creator.py` that creates latex table templates that where used in the report
 
 ## Files int the root folder
 
-- `ex_2_results_script.sh` is a bash script to execute the cripts that produce results for the two implementations. Its use is shown in the 'Build and Run' section
+- `ex2_results_script.sh` is a bash script to execute the cripts that produce results for the two implementations. Its use is shown in the 'Build and Run' section
 - `plots.py` creates a plot as a .pdf file in this root directory, which contains an illustration of the results for various thread counts and constant number of iterations at $10^6$. _You need to run `ex_2_results_script.sh` first!_
 - `system_info.py` creates a .ini file with system information. There is also the `system_DI.ini` file which was produced from this script for the PC's that ran the results that are contained in the final report.
 
