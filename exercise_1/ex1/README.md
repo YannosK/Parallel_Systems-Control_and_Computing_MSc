@@ -16,7 +16,7 @@ make clean
 
 ## Scripts
 
-To run the `exec.sh` script see the help message first:
+To run the `exec.sh` script install the packages specified in `requirements.txt` and see the help message first:
 
 ```bash
 python3 ./exec.sh -h

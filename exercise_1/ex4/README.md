@@ -5,7 +5,7 @@
 To compile the program of exercise 2, you can use the following command:
 
 ```bash
-make -DEFINES="-D[RWLOCK_POLICY]"
+make DEFINES="-D[RWLOCK_POLICY] LIBS="-lpthread"
 ```
 
 The `RWLOCK_POLICY` to choose from are the following:
@@ -22,10 +22,10 @@ make clean
 
 ## Scripts
 
-To run the `exec.sh` script see the help message first:
+To run the `exec.sh` script install the packages specified in `requirements.txt` and see the help message first:
 
 ```bash
-./exec.sh -h
+python3 ./exec.sh -h
 ```
 
 You need to create a file `conf.py` with the following content:
