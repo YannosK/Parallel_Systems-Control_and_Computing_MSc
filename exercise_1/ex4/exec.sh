@@ -317,8 +317,8 @@ if __name__ == '__main__':
         "WRITER_PRIORITY_POLICY"
     ]
 
-    iterations = 2
-    thread_nums = [1, 2, 4, 8]
+    iterations = 10
+    thread_nums = [1, 2, 3, 4, 5, 6, 7, 8]
 
     initial_keys = 1000
     operations_num = 500000

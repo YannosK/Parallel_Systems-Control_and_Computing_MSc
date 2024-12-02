@@ -378,7 +378,7 @@ int rwlock_unlock(rwlock_t *rwlock) {
 #endif
 
         if(_uwr_signal_rd(rwlock)) {
-            pthread_cond_signal(&(*rwlock)->cond_read);
+            pthread_cond_broadcast(&(*rwlock)->cond_read);
         }
 
         if(_uwr_signal_wr(rwlock)) {
@@ -396,7 +396,7 @@ int rwlock_unlock(rwlock_t *rwlock) {
     }
 
     if(_urd_signal_rd(rwlock)) {
-        pthread_cond_signal(&(*rwlock)->cond_read);
+        pthread_cond_broadcast(&(*rwlock)->cond_read);
     }
 
     if(_urd_signal_wr(rwlock)) {
