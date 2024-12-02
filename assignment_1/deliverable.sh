@@ -3,7 +3,7 @@
 ######## Run this script from the root folder of GitHub repository ########
 
 FOLDER_NAME="codebase"
-ASSIGNMENT_NAME="exercise_1"
+ASSIGNMENT_NAME="assignment_1"
 
 # Move files to deliverable directory
 mkdir ../$FOLDER_NAME
