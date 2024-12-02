@@ -10,6 +10,7 @@ import pandas as pd
 import subprocess
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
+from typing import List, Dict
 
 # Set matplotlib font
 if conf.font_path != "":
@@ -61,8 +62,8 @@ def compile_executable(
 
 def run_programs(
     iterations: int,
-    thread_nums: list[int],
-    configurations: list[dict[str, int]],
+    thread_nums: List[int],
+    configurations: List[Dict[str, int]],
     file_path: str
 ):
     """Run the program with different configurations and save the data to a csv file.
