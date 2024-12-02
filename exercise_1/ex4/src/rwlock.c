@@ -169,12 +169,12 @@ int _rw_predicate(rwlock_t const *const rwlock) {
 #endif
 
 int rwlock_wrlock(rwlock_t *rwlock) {
-    int ret = 0;
-
 #ifdef DEFAULT
     return pthread_rwlock_wrlock(&(*rwlock)->lock);
 #endif
 #ifndef DEFAULT
+    int ret = 0;
+
     if((ret = pthread_mutex_lock(&(*rwlock)->mutex_rw)) != 0) {
         return ret;
     };
@@ -334,12 +334,12 @@ int _urd_signal_wr(rwlock_t const *const rwlock) {
 #endif
 
 int rwlock_unlock(rwlock_t *rwlock) {
-    int ret = 0;
-
 #ifdef DEFAULT
     return pthread_rwlock_unlock(&(*rwlock)->lock);
 #endif
 #ifndef DEFAULT
+    int ret = 0;
+
     if((ret = pthread_mutex_lock(&(*rwlock)->mutex_rw)) != 0) {
         return ret;
     };
