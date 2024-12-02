@@ -2,10 +2,10 @@
 
 ## Compilation
 
-To compile the programm of exercise 1, you can use the following command:
+To compile the program of exercise 1, you can use the following command:
 
 ```bash
-make all
+make LIBS="-lpthread" all
 ```
 
 In order to clean the binary files, you can use the following command:
@@ -19,7 +19,7 @@ make clean
 To run the `exec.sh` script see the help message first:
 
 ```bash
-./exec.sh -h
+python3 ./exec.sh -h
 ```
 
 You need to create a file `conf.py` with the following content:
