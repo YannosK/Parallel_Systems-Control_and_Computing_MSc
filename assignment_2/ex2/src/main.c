@@ -1,5 +1,4 @@
-#include <math.h>
-#include <omp.h>
+// #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -72,6 +71,14 @@ int main(int argc, char *argv[]) {
     /***********************************
      *  Initializations
      ***********************************/
+
+    ret = random_values_vector(b, n);
+    if(ret)
+        exit(ret);
+
+    ret = upper_triangular_matrix(A, n);
+    if(ret)
+        exit(ret);
 
     /***********************************
      *  Pragmas and Parallel Execution

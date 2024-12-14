@@ -11,6 +11,8 @@
  * @param v the name of the aolready initialized array
  * @param n the number of elements it contains
  *
+ * @return 0 if all executed correctly
+ *
  * @warning it is the caller's responsibility to have the vector initialized
  * and to also pass the correct size
  */
