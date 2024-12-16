@@ -34,7 +34,7 @@ int random_range(int startpoint, int endpoint) {
 int random_values_vector(double *v, size_t n) {
 
     for(unsigned long i = 0; i < n; i++)
-        v[i] = (double)random_range(-255, 255);
+        v[i] = (double)random_range(-RAND_MAX / 2, RAND_MAX / 2);
 
     return 0;
 }
@@ -43,7 +43,7 @@ int upper_triangular_matrix(double **A, size_t n) {
 
     for(long long row = (long long)n - 1; row >= 0; row--) {
         for(long long column = row; column < (long long)n; column++)
-            A[row][column] = (double)random_range(-255, 255);
+            A[row][column] = (double)random_range(-RAND_MAX / 2, RAND_MAX / 2);
     }
 
     return 0;
@@ -70,6 +70,47 @@ int back_substitution_by_column(double **A, double *b, double *x, size_t n) {
     for(row = 0; row < n; row++)
         x[row] = b[row];
 
+    for(column = n - 1; column < n; column--) {
+        x[column] /= A[column][column];
+        for(row = 0; row < column; row++)
+            x[row] -= A[row][column] * x[column];
+    }
+
+    return 0;
+}
+
+int back_substitution_by_row_p(
+    double **A, double *b, double *x, size_t n, unsigned long threadcount
+) {
+
+    size_t row, column;
+
+    for(row = n - 1; row < n; row--) {
+        x[row] = b[row];
+
+// might need scope specification
+#pragma omp parallel for num_threads(threadcount) reduction(- : x[row])        \
+    schedule(runtime)
+        for(column = row + 1; column < n; column++)
+            x[row] -= A[row][column] * x[column];
+
+        x[row] /= A[row][row];
+    }
+
+    return 0;
+}
+
+int back_substitution_by_column_p(
+    double **A, double *b, double *x, size_t n, unsigned long threadcount
+) {
+
+    size_t row, column;
+
+#pragma omp parallel for num_threads(threadcount)
+    for(row = 0; row < n; row++)
+        x[row] = b[row];
+
+#pragma omp parallel for schedule(runtime)
     for(column = n - 1; column < n; column--) {
         x[column] /= A[column][column];
         for(row = 0; row < column; row++)

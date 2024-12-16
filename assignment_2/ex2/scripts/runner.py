@@ -14,7 +14,8 @@ def run_make():
 def run_schedule_variable_export(schedule : str):
     command = ['export'] + ['OMP_SCHEDULE=\"' + schedule +'\"']
     result = subprocess.run(command, text=True)
-    print(command)
+    if result.returncode != 0:
+        print(f"The environmental varibale OMP_SCHEDULE is not set\nReturn code {result.returncode}")
 
 def run_exec(arg):
 
@@ -32,16 +33,16 @@ def run_exec(arg):
             print(f"Ran out of heap memory")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('threadcount')
-parser.add_argument('iterations')
+parser.add_argument('threadcount', help='The number of threads - relevant only for parallel execution, else just insert 1')
+parser.add_argument('iterations', help='The size of the system')
 parser.add_argument('method', help='The method for back-substitution must either be \'rows\' or \'columns\'')
-parser.add_argument('-s', '--schedule', action='store', help='insert OpenMP scheduling', type=str)
+parser.add_argument('execution', help='Wether the \'sequential\' or \'parallel\' execution is used')
+parser.add_argument('-s', '--schedule', action='store', help='insert OpenMP scheduling by specifying the system variable value OMP_SCHEDULE', type=str)
 
 if __name__ == "__main__":
 
     args = parser.parse_args()
     arg = [value for key, value in vars(args).items() if key not in ['schedule'] and value is not None]
-    print(arg)
 
     print('\n**************************\nBuild\n**************************\n')
     run_make()

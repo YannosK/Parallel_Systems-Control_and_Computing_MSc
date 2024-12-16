@@ -40,14 +40,16 @@ int main(int argc, char *argv[]) {
      *  Argument check
      ***********************************/
 
-    if(argc != 4) {
-        printf("Usage: ./main <threadsnum> <problemsize> <method>\n");
+    if(argc != 5) {
+        printf("Usage: ./main <threadsnum> <problemsize> <rows-or-columns> "
+               "<parallel-or-sequential>\n");
         return 1;
     }
 
     thread_count = strtoul(argv[1], NULL, 10);
     n = strtoul(argv[2], NULL, 10);
     const char *method = argv[3];
+    const char *execution = argv[4];
 
     /***********************************
      *  Memory allocations
@@ -88,30 +90,68 @@ int main(int argc, char *argv[]) {
      *  Pragmas and Parallel Execution
      ***********************************/
 
-    if(!strcmp(method, "rows")) {
+    if(!strcmp(execution, "sequential")) {
 
-        GET_TIME(start);
-        back_substitution_by_row(A, b, x, n);
-        GET_TIME(finish);
+        if(!strcmp(method, "rows")) {
 
-        printf(
-            "Average difference from column back-substitution method: %.7lf\n",
-            compare_to_column_method(A, b, x, n)
-        );
+            GET_TIME(start);
+            back_substitution_by_row(A, b, x, n);
+            GET_TIME(finish);
 
-    } else if(!strcmp(method, "columns")) {
+            printf(
+                "Average difference from column back-substitution method: "
+                "%.7lf\n",
+                compare_to_column_method(A, b, x, n)
+            );
 
-        GET_TIME(start);
-        back_substitution_by_column(A, b, x, n);
-        GET_TIME(finish);
+        } else if(!strcmp(method, "columns")) {
 
-        printf(
-            "Average difference from row back-substitution method: %.7lf\n",
-            compare_to_row_method(A, b, x, n)
-        );
+            GET_TIME(start);
+            back_substitution_by_column(A, b, x, n);
+            GET_TIME(finish);
 
+            printf(
+                "Average difference from row back-substitution method: %lf\n",
+                compare_to_row_method(A, b, x, n)
+            );
+
+        } else {
+            printf("Method input does not match any known method\n");
+            exit(3);
+        }
+    } else if(!strcmp(execution, "parallel")) {
+
+        if(!strcmp(method, "rows")) {
+
+            GET_TIME(start);
+            back_substitution_by_row_p(A, b, x, n, thread_count);
+            GET_TIME(finish);
+
+            printf(
+                "Average difference from sequential method: "
+                "%.7lf\n",
+                compare_to_row_method(A, b, x, n)
+            );
+
+        } else if(!strcmp(method, "columns")) {
+
+            GET_TIME(start);
+            back_substitution_by_column_p(A, b, x, n, thread_count);
+            GET_TIME(finish);
+
+            printf(
+                "Average difference from row sequential method: %lf\n",
+                compare_to_row_method(A, b, x, n)
+            );
+
+        } else {
+            printf("Method input does not match any known method\n");
+            exit(3);
+        }
     } else {
-        printf("Method input does not match any known method\n");
+        printf(
+            "Execution input does not match parallel or sequential execution\n"
+        );
         exit(3);
     }
 
