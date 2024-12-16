@@ -1,6 +1,7 @@
 // #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 ////////////////////////////////
 // Local includes
@@ -17,9 +18,8 @@
 // Global Variables
 ///////////////////////////////
 
-unsigned long thread_count = 1; // number of threads
-unsigned long i = 0;            // iterator index
-int ret;                        // return value holder variable
+unsigned long i = 0; // iterator index
+int ret;             // return value holder variable
 
 int main(int argc, char *argv[]) {
 
@@ -29,7 +29,8 @@ int main(int argc, char *argv[]) {
 
     double start, finish, elapsed; // timing variables
 
-    size_t n = 1; // problem size
+    unsigned long thread_count = 1; // number of threads
+    size_t n = 1;                   // problem size
 
     double *x;  // solution x vector
     double *b;  // zero order coefficients
@@ -39,31 +40,32 @@ int main(int argc, char *argv[]) {
      *  Argument check
      ***********************************/
 
-    if(argc != 3) {
-        printf("Usage: ./main <threadsnum> <problemsize>\n");
+    if(argc != 4) {
+        printf("Usage: ./main <threadsnum> <problemsize> <method>\n");
         return 1;
     }
 
     thread_count = strtoul(argv[1], NULL, 10);
     n = strtoul(argv[2], NULL, 10);
+    const char *method = argv[3];
 
     /***********************************
      *  Memory allocations
      ***********************************/
 
-    x = (double *)malloc(n * sizeof(double));
+    x = (double *)calloc(n, sizeof(double));
     if(x == NULL)
         return 2;
 
-    b = (double *)malloc(n * sizeof(double));
+    b = (double *)calloc(n, sizeof(double));
     if(b == NULL)
         return 2;
 
-    A = (double **)malloc(n * sizeof(double *));
+    A = (double **)calloc(n, sizeof(double *));
     if(A == NULL)
         return 2;
     for(unsigned long i = 0; i < n; i++) {
-        A[i] = (double *)malloc(n * sizeof(double));
+        A[i] = (double *)calloc(n, sizeof(double));
         if(A[i] == NULL)
             return 2;
     }
@@ -80,19 +82,38 @@ int main(int argc, char *argv[]) {
     if(ret)
         exit(ret);
 
+    srand(2);
+
     /***********************************
      *  Pragmas and Parallel Execution
      ***********************************/
 
-    GET_TIME(start);
+    if(!strcmp(method, "rows")) {
 
-    // #pragma omp parallel for num_threads(thread_count) reduction(+ : sum)          \
-//     schedule(runtime                                                           \
-//     ) // Specify by exporting the proper OMP_SCHEDULE argument in the CLI
-    //     for(i = 0; i < n; i++)
-    //         sum += f(i);
+        GET_TIME(start);
+        back_substitution_by_row(A, b, x, n);
+        GET_TIME(finish);
 
-    GET_TIME(finish);
+        printf(
+            "Average difference from column back-substitution method: %.7lf\n",
+            compare_to_column_method(A, b, x, n)
+        );
+
+    } else if(!strcmp(method, "columns")) {
+
+        GET_TIME(start);
+        back_substitution_by_column(A, b, x, n);
+        GET_TIME(finish);
+
+        printf(
+            "Average difference from row back-substitution method: %.7lf\n",
+            compare_to_row_method(A, b, x, n)
+        );
+
+    } else {
+        printf("Method input does not match any known method\n");
+        exit(3);
+    }
 
     /***********************************
      *  Final calculations

@@ -3,11 +3,11 @@ import subprocess
 
 def run_make():
 
-    result = subprocess.run(['make', 'clean'], text=True)
+    result = subprocess.run(['make', '-C', '../', 'clean'], text=True)
     if result.returncode != 0:
         print(f"Error: make clean exited with return code {result.returncode}")
 
-    result = subprocess.run(['make'], text=True)
+    result = subprocess.run(['make', '-C', '../'], text=True)
     if result.returncode != 0:
         print(f"Error: make exited with return code {result.returncode}")
 
@@ -18,7 +18,7 @@ def run_schedule_variable_export(schedule : str):
 
 def run_exec(arg):
 
-    app = ['./build/app'] + arg
+    app = ['../build/app'] + arg
 
     result = subprocess.run(app, text=True)
 
@@ -34,6 +34,7 @@ def run_exec(arg):
 parser = argparse.ArgumentParser()
 parser.add_argument('threadcount')
 parser.add_argument('iterations')
+parser.add_argument('method', help='The method for back-substitution must either be \'rows\' or \'columns\'')
 parser.add_argument('-s', '--schedule', action='store', help='insert OpenMP scheduling', type=str)
 
 if __name__ == "__main__":
