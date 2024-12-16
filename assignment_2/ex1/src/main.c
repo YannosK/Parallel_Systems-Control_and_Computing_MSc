@@ -1,58 +1,73 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * Parse input from file and store it in an array.
- * It is assumed that the input file contains a matrix of integers
- * separated by semicolons.
- * Also, the array should be able to store all the values of the
- * input file as there is no check for overflows.
- *
- * Parameters:
- * - filename: the name of the file to read from.
- * - arr: the array to store the values in.
- *
- * Returns:
- * - 0 if the function executed successfully.
- * - 1 if there an error occurred.
- */
-int parse_input_from_file(char *filename, int *arr) {
-    FILE *file = fopen(filename, "r");
-    if(file == NULL) {
-        return 1;
-    }
+#include "game_of_life.h"
+#include "timer.h"
 
-    int index = 0;
-    int cell;
-
-    while(fscanf(file, "%d;", &cell) != EOF) {
-        *(arr + index++) = cell;
-    }
-
-    return 0;
+void argument_parse_error_message(char *program_name) {
+    printf("Usage: %s <generations> <grid> <mode> <threads>\n", program_name);
+    printf("\nArguments:\n");
+    printf(" - generations: the number of generations to simulate.\n");
+    printf(" - grid: the size of the grid (e.g. 10 for 10x10 grid).\n");
+    printf(" - mode: (0) serial or (1) parallel.\n");
+    printf(" - threads: the number of threads in parallel mode.\n");
 }
 
 int main(int argc, char *argv[]) {
-#ifdef DEBUG
-    for(int i = 0; i < argc; i++) {
-        printf("argv[%d] = %s\n", i, argv[i]);
+    // Parse arguments
+    if(argc != 5) {
+        argument_parse_error_message(argv[0]);
+        return 1;
     }
-    printf("\n");
+
+    int generations = strtol(argv[1], NULL, 10);
+    int grid = strtol(argv[2], NULL, 10);
+    int mode = strtol(argv[3], NULL, 10);
+    int threads = strtol(argv[4], NULL, 10);
+
+    // Initialize state
+    game_of_life_t gol;
+    if(gol_init(&gol, grid) != 0) {
+        fprintf(stderr, "Error: unable to initialize the game of life.\n");
+        return 1;
+    }
+
+// Fill the input matrix
+#ifdef DEBUG
+    int max_string_len = 100;
+
+    char filename[max_string_len];
+    snprintf(filename, max_string_len, "data/test/%d.txt", grid);
+
+    if(gol_parse_input_from_file(&gol, filename) != 0) {
+        fprintf(stderr, "Error: unable to parse input from file.\n");
+        return 1;
+    };
+#endif
+#ifndef DEBUG
+    gol_random_input(&gol);
 #endif
 
-    int arr[10][10];
-    char *filename = "test/test_10.txt";
+    double start, end;
 
-    parse_input_from_file(filename, &arr[0][0]);
-
-#ifdef DEBUG
-    printf("Matrix read from file:\n");
-    for(int i = 0; i < 10; i++) {
-        for(int j = 0; j < 10; j++)
-            printf("%d ", arr[i][j]);
-        printf("\n");
+    // Execute the game of life
+    if(mode == 0) {
+        GET_TIME(start);
+        gol_execute(&gol, generations);
+        GET_TIME(end);
+    } else {
+        GET_TIME(start);
+        printf("No parallel implementation for %d yet.\n", threads);
+        GET_TIME(end);
     }
-#endif
+
+    printf("Execution time: %.10fs\n", end - start);
+
+    // Destroy state
+    if(gol_destroy(&gol) != 0) {
+        fprintf(stderr, "Error: unable to destroy the game of life.\n");
+        return 1;
+    }
 
     return 0;
 }
