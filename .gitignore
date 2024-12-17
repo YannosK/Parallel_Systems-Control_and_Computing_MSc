@@ -11,6 +11,8 @@ assignment_1/ex2/__pycache__/*
 assignment_1/ex3/__pycache__/*
 assignment_1/ex4/__pycache__/*
 
+assignment_2/ex1/__pycache__/*
+
 # binary files
 assignment_1/ex1/bin/*
 assignment_1/ex2/mutex_lock/build/*
@@ -37,3 +39,5 @@ assignment_1/ex1/conf.py
 assignment_1/ex2/conf.py
 assignment_1/ex3/conf.py
 assignment_1/ex4/conf.py
+
+assignment_2/ex1/conf.py
