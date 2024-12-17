@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+import os
 
 def run_make():
 
@@ -12,25 +13,43 @@ def run_make():
         print(f"Error: make exited with return code {result.returncode}")
 
 def run_schedule_variable_export(schedule : str):
-    command = ['export'] + ['OMP_SCHEDULE=\"' + schedule +'\"']
-    result = subprocess.run(command, text=True)
-    if result.returncode != 0:
-        print(f"The environmental varibale OMP_SCHEDULE is not set\nReturn code {result.returncode}")
+
+    if 'OMP_SCHEDULE' in os.environ:
+        os.environ['OMP_SCHEDULE'] = schedule
+
+        envar = os.environ['OMP_SCHEDULE']
+        if schedule != envar:
+            print('OMP_SCHEDULE environmental variable not set')
+            exit(2)
+        else:
+            print(f'Environmental variable OMP_SCHEDULE set to {envar}')
+    else:
+        print('OMP_SCHEDULE environmental variable not found')
+        exit(1)
+
 
 def run_exec(arg):
 
     app = ['../build/app'] + arg
 
-    result = subprocess.run(app, text=True)
+    result = subprocess.run(app, text=True, capture_output=True)
 
-    if result.returncode != 0:
-        print(f"Error: Program exited with return code {result.returncode}")
-        if result.returncode == -11:
-            print(f"Segmentation Fault")
-        elif result.returncode == 1:
-            print(f"Wrong number of arguments")
-        elif result.returncode == 2:
-            print(f"Ran out of heap memory")
+    if result.stderr:
+        print('Error message in the execution, probable due to wrong OMP_SCHEDULE value')
+        print('Reseting to \"static\" and running again\n')
+        run_schedule_variable_export('static')
+        run_exec(arg)
+    else:
+        if result.returncode != 0:
+            print(f"Error: Program exited with return code {result.returncode}")
+            if result.returncode == -11:
+                print(f"Segmentation Fault")
+            elif result.returncode == 1:
+                print(f"Wrong number of arguments")
+            elif result.returncode == 2:
+                print(f"Ran out of heap memory")
+        else:
+            print(result.stdout)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('threadcount', help='The number of threads - relevant only for parallel execution, else just insert 1')
