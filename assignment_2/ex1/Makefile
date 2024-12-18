@@ -1,5 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -p -pg -Iinclude
+LIBS = -lm -fopenmp
 
 ifdef DEBUG
 	CFLAGS += -g -O0 -DDEBUG

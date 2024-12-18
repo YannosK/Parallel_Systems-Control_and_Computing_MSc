@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
     snprintf(filename, max_string_len, "data/test/%d.txt", grid);
 
     if(gol_parse_input_from_file(&gol, filename) != 0) {
-        fprintf(stderr, "Error: unable to parse input from file.\n");
+        fprintf(stderr, "Error: unable to parse input from %s.\n", filename);
         return 1;
     };
 #endif
@@ -56,9 +57,9 @@ int main(int argc, char *argv[]) {
         gol_execute(&gol, generations);
         GET_TIME(end);
     } else {
-        GET_TIME(start);
-        printf("No parallel implementation for %d yet.\n", threads);
-        GET_TIME(end);
+        start = omp_get_wtime();
+        gol_execute_parallel(&gol, generations, threads);
+        end = omp_get_wtime();
     }
 
     printf("Execution time: %.10fs\n", end - start);

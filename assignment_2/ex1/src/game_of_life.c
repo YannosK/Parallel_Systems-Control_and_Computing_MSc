@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -339,5 +340,56 @@ void gol_execute(const game_of_life_t *const gol, const int generations) {
         temp_ptr = (*gol)->input_ptr;
         (*gol)->input_ptr = (*gol)->output_ptr;
         (*gol)->output_ptr = temp_ptr;
+    }
+}
+
+void gol_execute_parallel(
+    const game_of_life_t *const gol, const int generations, const int threads
+) {
+    int neighbors;
+    int *temp_ptr;
+
+#pragma omp parallel num_threads(threads) default(none)                        \
+    shared(gol, generations, temp_ptr) private(neighbors)
+    {
+
+#ifdef DEBUG
+#pragma omp single nowait
+        {
+            printf("Number of threads: %d\n\n", omp_get_num_threads());
+            printf("Initial state:\n");
+            print_cells((*gol)->input_ptr, (*gol)->grid);
+        }
+#endif
+
+        for(int gen = 0; gen < generations; gen++) {
+#pragma omp for schedule(static)
+            for(int i = 0; i < (*gol)->grid; i++) {
+                for(int j = 0; j < (*gol)->grid; j++) {
+                    neighbors = gol_calculate_neighbors(
+                        (*gol)->input_ptr, i, j, (*gol)->grid
+                    );
+                    gol_enforce_rules(
+                        (*gol)->input_ptr, (*gol)->output_ptr, neighbors, i, j,
+                        (*gol)->grid
+                    );
+                }
+            }
+
+#ifdef DEBUG
+#pragma omp single
+            {
+                printf("After generation %d:\n", gen);
+                print_cells((*gol)->output_ptr, (*gol)->grid);
+            }
+#endif
+
+#pragma omp single
+            {
+                temp_ptr = (*gol)->input_ptr;
+                (*gol)->input_ptr = (*gol)->output_ptr;
+                (*gol)->output_ptr = temp_ptr;
+            }
+        }
     }
 }

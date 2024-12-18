@@ -70,4 +70,16 @@ void gol_random_input(const game_of_life_t *const gol);
  */
 void gol_execute(const game_of_life_t *const gol, const int generations);
 
+/*
+ * Execute the game of life for a given number of generations in parallel.
+ *
+ * Parameters:
+ * - gol: the game of life object.
+ * - generations: the number of generations to simulate.
+ * - threads: the number of threads to use.
+ */
+void gol_execute_parallel(
+    const game_of_life_t *const gol, const int generations, const int threads
+);
+
 #endif
