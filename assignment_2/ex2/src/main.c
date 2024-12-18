@@ -98,11 +98,11 @@ int main(int argc, char *argv[]) {
             back_substitution_by_row(A, b, x, n);
             GET_TIME(finish);
 
-            printf(
-                "Average difference from column back-substitution method: "
-                "%.7lf\n",
-                compare_to_column_method(A, b, x, n)
-            );
+            // printf(
+            //     "Average difference from column back-substitution method: "
+            //     "%.7lf\n",
+            //     compare_to_column_method(A, b, x, n)
+            // );
 
         } else if(!strcmp(method, "columns")) {
 
@@ -110,10 +110,10 @@ int main(int argc, char *argv[]) {
             back_substitution_by_column(A, b, x, n);
             GET_TIME(finish);
 
-            printf(
-                "Average difference from row back-substitution method: %lf\n",
-                compare_to_row_method(A, b, x, n)
-            );
+            // printf(
+            //     "Average difference from row back-substitution method:
+            //     %lf\n", compare_to_row_method(A, b, x, n)
+            // );
 
         } else {
             printf("Method input does not match any known method\n");
