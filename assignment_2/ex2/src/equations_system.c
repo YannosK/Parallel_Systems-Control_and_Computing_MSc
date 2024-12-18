@@ -88,11 +88,96 @@ int back_substitution_by_row_p(
     for(row = n - 1; row < n; row--) {
         x[row] = b[row];
 
-// might need scope specification
-#pragma omp parallel for num_threads(threadcount) reduction(- : x[row])        \
-    schedule(runtime)
-        for(column = row + 1; column < n; column++)
+        /***********************************
+         * CRITICAL APPROACH
+         */
+#pragma omp parallel for num_threads(threadcount) schedule(runtime)
+        for(column = row + 1; column < n; column++) {
+#pragma omp critical
             x[row] -= A[row][column] * x[column];
+        }
+        /**
+         * EVALUATION:
+         * - same with the sequential
+         * - slower almost ten times
+         ************************************* */
+
+        //         /***********************************
+        //          * REDUCTION SIMPLE APPROACH
+        //          */
+        // #pragma omp parallel for num_threads(threadcount) reduction(-:
+        // x[row]) schedule(runtime)
+        //         for(column = row + 1; column < n; column++) {
+        //             x[row] -= A[row][column] * x[column];
+        //         }
+        //         /**
+        //          * EVALUATION:
+        //          * - huge difference from sequential method
+        //          * - ten times slower
+        //          *
+        //          * WARNING:
+        //          * I think reductions does not work properly
+        //          ************************************* */
+
+        //         /***********************************
+        //          * REDUCTION SCOPE APPROACH
+        //          */
+        // #pragma omp parallel for num_threads(threadcount) reduction(-:
+        // x[row]) \
+// private(column) shared(A, row)\
+// schedule(runtime)
+        //         for(column = row + 1; column < n; column++) {
+        //             x[row] -= A[row][column] * x[column];
+        //         }
+        //         /**
+        //          * EVALUATION:
+        //          * - huge difference from sequential method
+        //          * - ten times slower
+        //          * - practically nothing changed with the scpecified scopes
+        //          *
+        //          * WARNING:
+        //          * Again reduction is not working
+        //          ************************************* */
+
+        //         /***********************************
+        //          * REDUCTION WITH LOCAL VARIABLE APPROACH
+        //          */
+        //         double local_var = x[row];
+        // #pragma omp parallel for num_threads(threadcount) reduction(-:
+        // local_var) schedule(runtime)
+        //         for(column = row + 1; column < n; column++) {
+        //             local_var -= A[row][column] * x[column];
+        //         }
+        //         x[row] = local_var;
+        //         /**
+        //          * EVALUATION:
+        //          * - huge difference from sequential method
+        //          * - just a little slower - practically the same
+        //          *
+        //          * WARNING:
+        //          * Again reduction might not work
+        //          ************************************* */
+
+        //         /***********************************
+        //          * REDUCTION WITH LOCAL VARIABLE AND SCOPE APPROACH
+        //          */
+        //         double local_var = x[row];
+        // #pragma omp parallel for num_threads(threadcount) \
+// default(none) reduction(-: local_var) private(column) shared(A, row,
+        // x, n) \ schedule(runtime)
+        //         for(column = row + 1; column < n; column++) {
+        //             local_var -= A[row][column] * x[column];
+        //         }
+        //         x[row] = local_var;
+        //         /**
+        //          * EVALUATION:
+        //          * - huge difference from sequential method
+        //          * - just a little slower - almost the same
+        //          * - nothing schanged with the scope...
+        //          *
+        //          * WARNING:
+        //          * Again reduction might not work
+        //          ************************************* */
 
         x[row] /= A[row][row];
     }
