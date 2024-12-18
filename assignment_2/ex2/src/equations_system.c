@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdio.h>
 
+#define VERBOSE
+
 /////////////////////////////////////////////////////////////////
 // Private function definitions
 /////////////////////////////////////////////////////////////////
@@ -92,12 +94,16 @@ int back_substitution_by_row_p(
         internal_iterations = row + 1 - n;
 
         if(internal_iterations > threadcount) {
-#pragma omp parallel for num_threads(threadcount) default(none) reduction(-: local_var) private(column) shared(A, row, x, n) schedule(runtime)
+#pragma omp parallel for num_threads(threadcount) default(none)                \
+    reduction(- : local_var) private(column) shared(A, row, x, n)              \
+    schedule(runtime)
             for(column = row + 1; column < n; column++) {
                 local_var -= A[row][column] * x[column];
             }
         } else {
-#pragma omp parallel for num_threads(internal_iterations) default(none) reduction(-: local_var) private(column) shared(A, row, x, n) schedule(runtime)
+#pragma omp parallel for num_threads(internal_iterations) default(none)        \
+    reduction(- : local_var) private(column) shared(A, row, x, n)              \
+    schedule(runtime)
             for(column = row + 1; column < n; column++) {
                 local_var -= A[row][column] * x[column];
             }
@@ -109,23 +115,56 @@ int back_substitution_by_row_p(
     return 0;
 }
 
+// /**
+//  * NOTE:
+//  * The following commented out code creates segmentation faults
+//  */
+// int back_substitution_by_row_p(
+//     double **A, double *b, double *x, size_t n, unsigned long threadcount
+// ) {
+//     size_t row, column;
+//     double local_var = 0.0;
+
+// #pragma omp parallel num_threads(threadcount) default(none) reduction(- :
+// local_var) shared(A, b, x, n, row) private(column)
+//     {
+
+//         for(row = n - 1; row < n; row--) {
+//             local_var = b[row];
+
+// #pragma omp for
+//             for(column = row + 1; column < n; column++) {
+//                 local_var -= A[row][column] * x[column];
+//             }
+
+// #pragma omp single
+//             { x[row] = local_var / A[row][row]; }
+//         }
+//     }
+
+//     return 0;
+// }
+
 int back_substitution_by_column_p(
     double **A, double *b, double *x, size_t n, unsigned long threadcount
 ) {
 
     size_t row, column;
 
-#pragma omp parallel for num_threads(threadcount)
-    for(row = 0; row < n; row++)
-        x[row] = b[row];
+#pragma omp parallel num_threads(threadcount)
+    {
 
-#pragma omp parallel for schedule(runtime)
-    for(column = n - 1; column < n; column--) {
-        x[column] /= A[column][column];
-        for(row = 0; row < column; row++)
-            x[row] -= A[row][column] * x[column];
+#pragma omp for schedule(runtime)
+        for(row = 0; row < n; row++)
+            x[row] = b[row];
+
+#pragma omp for schedule(runtime)
+        for(column = n - 1; column < n; column--) {
+            x[column] /= A[column][column];
+            for(row = 0; row < column; row++)
+                x[row] -= A[row][column] * x[column];
+        }
     }
-
     return 0;
 }
 
@@ -142,10 +181,18 @@ double compare_to_row_method(double **A, double *b, double *x, size_t n) {
 
     back_substitution_by_row(A, b, y, n);
 
+#if defined(VERBOSE)
+    printf("\nInputed vector:\n");
+    vector_printer(x, n);
+
+    printf("\nSequential row method vector:\n");
+    vector_printer(y, n);
+    printf("\n");
+#endif
+
     double total_difference = 0.0;
     for(size_t i = 0; i < n; i++) {
-        if(y[i] != x[i])
-            total_difference += fabs(y[i] - x[i]);
+        total_difference += fabs(y[i] - x[i]);
     }
 
     free(y);
@@ -162,10 +209,18 @@ double compare_to_column_method(double **A, double *b, double *x, size_t n) {
 
     back_substitution_by_column(A, b, y, n);
 
+#if defined(VERBOSE)
+    printf("\nInputed vector:\n");
+    vector_printer(x, n);
+
+    printf("\nSequential column method vector:\n");
+    vector_printer(y, n);
+    printf("\n");
+#endif
+
     double total_difference = 0.0;
     for(size_t i = 0; i < n; i++) {
-        if(y[i] != x[i])
-            total_difference += fabs(y[i] - x[i]);
+        total_difference += fabs(y[i] - x[i]);
     }
 
     free(y);

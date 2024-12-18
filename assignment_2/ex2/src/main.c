@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
             GET_TIME(finish);
 
             printf(
-                "Average difference from sequential method: "
+                "Average difference from sequential row method: "
                 "%.7lf\n",
                 compare_to_row_method(A, b, x, n)
             );
@@ -140,8 +140,8 @@ int main(int argc, char *argv[]) {
             GET_TIME(finish);
 
             printf(
-                "Average difference from row sequential method: %lf\n",
-                compare_to_row_method(A, b, x, n)
+                "Average difference from sequential column method: %lf\n",
+                compare_to_column_method(A, b, x, n)
             );
 
         } else {
