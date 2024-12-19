@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#define VERBOSE
+// #define VERBOSE
 
 /////////////////////////////////////////////////////////////////
 // Private function definitions
@@ -27,6 +27,67 @@ int random_range(int startpoint, int endpoint) {
         exit(1);
 
     return (rand() % (range + 1) + startpoint);
+}
+
+/**
+ * Prints a square matrix in the terminal
+ *
+ * @param A the name of the already initialized n x n matrix
+ * @param n the number of rows and columns of the matrix
+ *
+ * @warning
+ *
+ * - it is the caller's responsibility to have the matrix initialized
+ * and to also pass the correct size
+ *
+ * - since it prints out in the terminal, matrixes with very large
+ * element values, or too many values, might not be printed correctly
+ */
+void matrix_printer(double **A, size_t n) {
+
+    for(size_t i = 0; i < n; i++) {
+        printf("\n|");
+        for(size_t j = 0; j < n; j++)
+            printf("%.0lf\t", A[i][j]);
+        printf("\b\b\b|");
+    }
+    printf("\n");
+}
+
+/**
+ * Prints an array of doubles in the terminal
+ *
+ * @param A the name of the already initialized double array
+ * @param n the number of elements in the array
+ *
+ * @warning
+ *
+ * - it is the caller's responsibility to have the vector initialized
+ * and to also pass the correct size
+ *
+ * - it prints up to fourth decimal digit accuracy
+ */
+void vector_printer(double *v, size_t n) {
+
+    printf("\n");
+
+    for(size_t i = 0; i < n; i++)
+        printf("%.17lf\n", v[i]);
+
+    printf("\n");
+}
+
+void tester(size_t n) {
+
+    for(size_t column = n - 1; column <= n - 1; column--)
+        printf("%lu\n", n);
+
+    printf("\n");
+
+    for(long long column = (long long)n - 1; column >= 0; column--)
+        printf("%lld\n", (long long)n);
+
+    printf("\n");
 }
 
 /////////////////////////////////////////////////////////////////
@@ -149,17 +210,17 @@ int back_substitution_by_column_p(
     double **A, double *b, double *x, size_t n, unsigned long threadcount
 ) {
 
-    size_t row, column;
+    long long row, column;
 
 #pragma omp parallel num_threads(threadcount)
     {
 
 #pragma omp for schedule(runtime)
-        for(row = 0; row < n; row++)
+        for(row = 0; row < (long long)n; row++)
             x[row] = b[row];
 
 #pragma omp for schedule(runtime)
-        for(column = n - 1; column < n; column--) {
+        for(column = (long long)n - 1; column >= 0; column--) {
             x[column] /= A[column][column];
             for(row = 0; row < column; row++)
                 x[row] -= A[row][column] * x[column];
@@ -167,6 +228,24 @@ int back_substitution_by_column_p(
     }
     return 0;
 }
+
+// int back_substitution_by_column_p(
+//     double **A, double *b, double *x, size_t n, unsigned long threadcount
+// ) {
+//     long long row, column;
+
+//     for(row = 0; row < (long long)n; row++)
+//         x[row] = b[row];
+
+// #pragma omp parallel for num_threads(threadcount) schedule(runtime)
+//     for(column = (long long)n - 1; column >= 0; column--) {
+//         x[column] /= A[column][column];
+//         for(row = 0; row < column; row++)
+//             x[row] -= A[row][column] * x[column];
+//     }
+
+//     return 0;
+// }
 
 /////////////////////////////////////////////////////////////////
 // Debug and testers
@@ -187,17 +266,27 @@ double compare_to_row_method(double **A, double *b, double *x, size_t n) {
 
     printf("\nSequential row method vector:\n");
     vector_printer(y, n);
+
     printf("\n");
 #endif
 
-    double total_difference = 0.0;
+    double rel_sum = 0.0;
+    double epsilon = 1e-10;
     for(size_t i = 0; i < n; i++) {
-        total_difference += fabs(y[i] - x[i]);
+        if(isnan(x[i]) || isnan(y[i])) {
+            rel_sum += 0;
+            n--;
+        } else {
+            if(fabs(y[i]) == 0)
+                rel_sum = fabs(x[i] - y[i]) / epsilon;
+            else
+                rel_sum += fabs(x[i] - y[i]) / fabs(y[i]);
+        }
     }
 
     free(y);
 
-    return total_difference / n;
+    return rel_sum / n;
 }
 
 double compare_to_column_method(double **A, double *b, double *x, size_t n) {
@@ -215,76 +304,25 @@ double compare_to_column_method(double **A, double *b, double *x, size_t n) {
 
     printf("\nSequential column method vector:\n");
     vector_printer(y, n);
+
     printf("\n");
 #endif
 
-    double total_difference = 0.0;
+    double rel_sum = 0.0;
+    double epsilon = 1e-10;
     for(size_t i = 0; i < n; i++) {
-        total_difference += fabs(y[i] - x[i]);
+        if(isnan(x[i]) || isnan(y[i])) {
+            rel_sum += 0;
+            n--;
+        } else {
+            if(fabs(y[i]) == 0)
+                rel_sum = fabs(x[i] - y[i]) / epsilon;
+            else
+                rel_sum += fabs(x[i] - y[i]) / fabs(y[i]);
+        }
     }
 
     free(y);
 
-    return total_difference / n;
-}
-
-/**
- * Prints a square matrix in the terminal
- *
- * @param A the name of the already initialized n x n matrix
- * @param n the number of rows and columns of the matrix
- *
- * @warning
- *
- * - it is the caller's responsibility to have the matrix initialized
- * and to also pass the correct size
- *
- * - since it prints out in the terminal, matrixes with very large
- * element values, or too many values, might not be printed correctly
- */
-void matrix_printer(double **A, size_t n) {
-
-    for(size_t i = 0; i < n; i++) {
-        printf("\n|");
-        for(size_t j = 0; j < n; j++)
-            printf("%.0lf\t", A[i][j]);
-        printf("\b\b\b|");
-    }
-    printf("\n");
-}
-
-void tester(size_t n) {
-
-    for(size_t column = n - 1; column <= n - 1; column--)
-        printf("%lu\n", n);
-
-    printf("\n");
-
-    for(long long column = (long long)n - 1; column >= 0; column--)
-        printf("%lld\n", (long long)n);
-
-    printf("\n");
-}
-
-/**
- * Prints an array of doubles in the terminal
- *
- * @param A the name of the already initialized double array
- * @param n the number of elements in the array
- *
- * @warning
- *
- * - it is the caller's responsibility to have the vector initialized
- * and to also pass the correct size
- *
- * - it prints up to fourth decimal digit accuracy
- */
-void vector_printer(double *v, size_t n) {
-
-    printf("\n");
-
-    for(size_t i = 0; i < n; i++)
-        printf("%.17lf\n", v[i]);
-
-    printf("\n");
+    return rel_sum / n;
 }

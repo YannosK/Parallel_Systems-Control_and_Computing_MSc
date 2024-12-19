@@ -27,7 +27,8 @@ int main(int argc, char *argv[]) {
      *  Local variables
      ***********************************/
 
-    double start, finish, elapsed; // timing variables
+    double start, finish, elapsed_seq, elapsed_par; // timing variables
+    double rel_er; // variable to store relative errors
 
     unsigned long thread_count = 1; // number of threads
     size_t n = 1;                   // problem size
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
     srand(2);
 
     /***********************************
-     *  Pragmas and Parallel Execution
+     *  Execution of the program
      ***********************************/
 
     if(!strcmp(execution, "sequential")) {
@@ -97,23 +98,28 @@ int main(int argc, char *argv[]) {
             GET_TIME(start);
             back_substitution_by_row(A, b, x, n);
             GET_TIME(finish);
+            elapsed_seq = finish - start;
+            printf(
+                "\nSequential row method execution time: %lf\n", elapsed_seq
+            );
 
-            // printf(
-            //     "Average difference from column back-substitution method: "
-            //     "%.7lf\n",
-            //     compare_to_column_method(A, b, x, n)
-            // );
+            rel_er = compare_to_column_method(A, b, x, n);
+
+            printf("\nRelative error to column method: %.7lf\n", rel_er);
 
         } else if(!strcmp(method, "columns")) {
 
             GET_TIME(start);
             back_substitution_by_column(A, b, x, n);
             GET_TIME(finish);
+            elapsed_seq = finish - start;
+            printf(
+                "\nSequential column method execution time: %lf\n", elapsed_seq
+            );
 
-            // printf(
-            //     "Average difference from row back-substitution method:
-            //     %lf\n", compare_to_row_method(A, b, x, n)
-            // );
+            rel_er = compare_to_row_method(A, b, x, n);
+
+            printf("\nRelative error to row method: %.7lf\n", rel_er);
 
         } else {
             printf("Method input does not match any known method\n");
@@ -126,23 +132,38 @@ int main(int argc, char *argv[]) {
             GET_TIME(start);
             back_substitution_by_row_p(A, b, x, n, thread_count);
             GET_TIME(finish);
+            elapsed_par = finish - start;
+            printf("\nParallel row method execution time: %lf\n", elapsed_par);
 
-            printf(
-                "Average difference from sequential row method: "
-                "%.7lf\n",
-                compare_to_row_method(A, b, x, n)
-            );
+            GET_TIME(start);
+            rel_er = compare_to_row_method(A, b, x, n);
+            GET_TIME(finish);
+            elapsed_seq = finish - start;
+            printf("Sequential row method execution time: %lf\n", elapsed_seq);
+            printf("Speedup: %lf\n", elapsed_seq / elapsed_par);
+
+            printf("\nRelative error to sequential method: %.lf\n", rel_er);
 
         } else if(!strcmp(method, "columns")) {
 
             GET_TIME(start);
             back_substitution_by_column_p(A, b, x, n, thread_count);
             GET_TIME(finish);
-
+            elapsed_par = finish - start;
             printf(
-                "Average difference from sequential column method: %lf\n",
-                compare_to_column_method(A, b, x, n)
+                "\nParallel column method execution time: %lf\n", elapsed_par
             );
+
+            GET_TIME(start);
+            rel_er = compare_to_column_method(A, b, x, n);
+            GET_TIME(finish);
+            elapsed_seq = finish - start;
+            printf(
+                "Sequential column method execution time: %lf\n", elapsed_seq
+            );
+            printf("Speedup: %lf\n", elapsed_seq / elapsed_par);
+
+            printf("\nRelative error to sequential method: %.lf\n", rel_er);
 
         } else {
             printf("Method input does not match any known method\n");
@@ -154,13 +175,6 @@ int main(int argc, char *argv[]) {
         );
         exit(3);
     }
-
-    /***********************************
-     *  Final calculations
-     ***********************************/
-
-    elapsed = finish - start;
-    printf("\nElapsed time: %lf\n", elapsed);
 
     /***********************************
      *  Delete, destroy and deallocation
