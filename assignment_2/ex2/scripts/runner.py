@@ -23,20 +23,6 @@ def run_schedule_variable_export(schedule : str):
     else:
         print(f'Environmental variable OMP_SCHEDULE set to {envar}')
 
-    # if 'OMP_SCHEDULE' in os.environ:
-    #     os.environ['OMP_SCHEDULE'] = schedule
-
-    #     envar = os.environ['OMP_SCHEDULE']
-    #     if schedule != envar:
-    #         print('OMP_SCHEDULE environmental variable not set')
-    #         exit(2)
-    #     else:
-    #         print(f'Environmental variable OMP_SCHEDULE set to {envar}')
-    # else:
-    #     print('OMP_SCHEDULE environmental variable not found')
-    #     exit(1)
-
-
 def run_exec(arg):
 
     app = ['../build/app'] + arg
