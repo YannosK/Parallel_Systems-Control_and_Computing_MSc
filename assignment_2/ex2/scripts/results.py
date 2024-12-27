@@ -3,7 +3,14 @@ import os
 import csv
 import subprocess
 import re
-from tqdm import tqdm
+from tqdm import tqdm # type: ignore
+import sys
+
+if sys.version_info < (3, 9):
+    from typing import Tuple
+    TupleToUse = Tuple
+else:
+    TupleToUse = tuple
 
 
 ################################################
@@ -81,7 +88,7 @@ def get_results(
         iterations : int,
         method : str,
         schedule : str
-) -> tuple[float, float]:
+) -> TupleToUse[float, float]:
     '''
     Calls the python runner.py script that builds and runs the program.
     It returns a tuple with the speedup and the efficiency.
