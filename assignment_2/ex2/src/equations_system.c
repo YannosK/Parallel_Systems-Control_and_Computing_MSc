@@ -258,32 +258,6 @@ int back_substitution_by_column_p(
 // }
 /***************************************************************/
 
-int back_substitution_by_column_p(
-    double **A, double *b, double *x, size_t n, unsigned long threadcount
-) {
-    long long row, column;
-
-#pragma omp parallel num_threads(threadcount)
-    {
-
-        for(row = 0; row < (long long)n; row++) {
-            x[row] = b[row];
-        }
-
-        for(column = (long long)n - 1; column >= 0; column--) {
-
-            x[column] /= A[column][column];
-
-#pragma omp for schedule(runtime)
-            for(row = 0; row < column; row++) {
-                x[row] -= A[row][column] * x[column];
-            }
-        }
-    }
-
-    return 0;
-}
-
 /////////////////////////////////////////////////////////////////
 // Debug and testers
 /////////////////////////////////////////////////////////////////
