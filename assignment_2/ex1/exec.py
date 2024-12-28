@@ -1,19 +1,23 @@
 import os
 import re
-import conf
 import time
 import argparse
 import itertools
 import numpy as np
 import pandas as pd
 import subprocess
+from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 
+# Set the environment variables
+load_dotenv()
+FONT_PATH = os.getenv("FONT_PATH")
+
 # Set matplotlib font
-if conf.font_path != "":
-    font_manager.fontManager.addfont(conf.font_path)
-    prop = font_manager.FontProperties(fname=conf.font_path)
+if FONT_PATH != "":
+    font_manager.fontManager.addfont(FONT_PATH)
+    prop = font_manager.FontProperties(fname=FONT_PATH)
 
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = prop.get_name()
