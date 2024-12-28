@@ -228,14 +228,13 @@ int back_substitution_by_column_p(
 
     for(column = (long long)n - 1; column >= 0; column--) {
         x[column] /= A[column][column];
-        internal_iterations = row + 1 - n;
 
-        if(internal_iterations > threadcount) {
+        if(column > threadcount) {
 #pragma omp parallel for num_threads(threadcount) schedule(runtime)
             for(row = 0; row < column; row++)
                 x[row] -= A[row][column] * x[column];
         } else {
-#pragma omp parallel for num_threads(threadcount) schedule(runtime)
+#pragma omp parallel for num_threads(column) schedule(runtime)
             for(row = 0; row < column; row++)
                 x[row] -= A[row][column] * x[column];
         }
