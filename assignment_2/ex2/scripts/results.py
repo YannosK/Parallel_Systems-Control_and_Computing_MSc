@@ -147,6 +147,9 @@ parser.add_argument('-m', '--method',
 parser.add_argument('-c', '--clean',
                     action='store_true',
                     help='Cleans up result files')
+parser.add_argument('-o', '--onevalue',
+                    action='store_true',
+                    help='Instead of computing the average of speedup and efficiency it runs it one time')
 
 ################################################
 # Main
@@ -172,6 +175,8 @@ if __name__ == "__main__":
     else:
         methods = [args.method]
 
+    average = not args.onevalue
+
     iterations_start = 2500
     threadcount = [1, 2, 3, 4, 8]
     chunks = ['default', '1', 'maxchunk']
@@ -179,6 +184,11 @@ if __name__ == "__main__":
     #****************#
     # Logic
     #****************#
+
+    if average:
+        print("Computing average efficiencies and speedup")
+    else:
+        print("Computing one run results for efficiencies and speedup")
 
     create_result_directories(args.clean)
 
@@ -209,16 +219,40 @@ if __name__ == "__main__":
                     ef_result = [iterations]
                     sp_result = [iterations]
 
-                    # for threads in threadcount:
+                    # if average:
+                    #     for threads in threadcount:
+                    # else:
                     for threads in tqdm(threadcount, desc=f'Method: {method}, File: {ef_csv}, Iterations: {iterations}'):
-                        if chunk == 'default':
-                            [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule}\"')
-                        elif chunk == '1':
-                            [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},1\"')
-                        elif chunk == 'maxchunk':
-                            [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                        if average:
+                            
+                            speedups = []
+                            efficiencies = []
+
+                            for i in tqdm(range(10), desc="Computing average: "):
+                                if chunk == 'default':
+                                    [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule}\"')
+                                elif chunk == '1':
+                                    [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},1\"')
+                                elif chunk == 'maxchunk':
+                                    [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                                else:
+                                    raise ValueError('Wrong chunk value')
+                                
+                                speedups.append(speedup_temp)
+                                efficiencies.append(efficiency_temp)
+                            
+                            speedup = sum(speedups) / len(speedups)
+                            efficiency = sum(efficiencies) / len(efficiencies)
+
                         else:
-                            raise ValueError('Wrong chunk value')
+                            if chunk == 'default':
+                                [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule}\"')
+                            elif chunk == '1':
+                                [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},1\"')
+                            elif chunk == 'maxchunk':
+                                [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                            else:
+                                raise ValueError('Wrong chunk value')
                         
                         sp_result.append(speedup)
                         ef_result.append(efficiency)
@@ -238,3 +272,4 @@ if __name__ == "__main__":
                         csvfile.close()
 
                     iterations *= 2
+
