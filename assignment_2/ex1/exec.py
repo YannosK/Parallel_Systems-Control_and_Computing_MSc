@@ -64,6 +64,10 @@ def run_programs(
 
     for iteration in range(iterations):
         for element in itertools.product(generations_list, grid_list, mode_list, threads_list):
+            # Sequential mode with more than 1 thread is not valid
+            if (element[2] == 0 and element[3] > 1):
+                continue
+
             # Execute program and catch output
             output = subprocess.run(
                 [
