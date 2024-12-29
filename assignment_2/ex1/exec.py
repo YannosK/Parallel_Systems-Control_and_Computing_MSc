@@ -3,9 +3,10 @@ import re
 import time
 import argparse
 import itertools
+import subprocess
 import numpy as np
 import pandas as pd
-import subprocess
+from typing import List
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
@@ -41,10 +42,10 @@ root_data_table_folder = f"{root_data_folder}/table"
 
 def run_programs(
     iterations: int,
-    generations_list: list[int],
-    grid_list: list[int],
-    mode_list: list[int],
-    threads_list: list[int],
+    generations_list: List[int],
+    grid_list: List[int],
+    mode_list: List[int],
+    threads_list: List[int],
     file_path: str
 ):
     """Run program with different generations, grid, mode and threads and
@@ -52,10 +53,10 @@ def run_programs(
 
     Args:
         iterations (int): Number of iterations to repeat the execution.
-        generations_list (list[int]): List of generations to run the program with.
-        grid_list (list[int]): List of grid sizes to run the program with .
-        mode_list (list[int]): List of modes to run the program with.
-        threads_list (list[int]): List of thread numbers to run the program with.
+        generations_list (List[int]): List of generations to run the program with.
+        grid_list (List[int]): List of grid sizes to run the program with .
+        mode_list (List[int]): List of modes to run the program with.
+        threads_list (List[int]): List of thread numbers to run the program with.
         file_path (str): The path to the csv file to save the data.
     """
     with open(file_path, "w") as f:
