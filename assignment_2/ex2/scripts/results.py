@@ -179,7 +179,8 @@ if __name__ == "__main__":
 
     iterations_start = 2500
     threadcount = [1, 2, 3, 4, 8]
-    chunks = ['default', '1', 'maxchunk']
+    # chunks = ['default', '1', 'maxchunk']
+    chunks = ['default', '1']
 
     #****************#
     # Logic
@@ -233,8 +234,8 @@ if __name__ == "__main__":
                                     [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule}\"')
                                 elif chunk == '1':
                                     [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},1\"')
-                                elif chunk == 'maxchunk':
-                                    [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                                # elif chunk == 'maxchunk':
+                                #     [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
                                 else:
                                     raise ValueError('Wrong chunk value')
                                 
@@ -249,8 +250,8 @@ if __name__ == "__main__":
                                 [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule}\"')
                             elif chunk == '1':
                                 [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},1\"')
-                            elif chunk == 'maxchunk':
-                                [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                            # elif chunk == 'maxchunk':
+                            #     [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
                             else:
                                 raise ValueError('Wrong chunk value')
                         
