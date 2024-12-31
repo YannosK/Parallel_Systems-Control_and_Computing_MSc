@@ -1,8 +1,11 @@
 - [x] column method does not produce similar results with sequentials even for small systems
 - [x] row method does produce pretty similar results but the number it prints lies
-- [ ] both methods have best results with the code that produces segmentation faults.
+- [x] both methods have best results with the code that produces segmentation faults.
     - [x] Maybe something wrong with the curly braces ---> _NO_
-    - [ ] Maybe need to add scope
+    - [x] Maybe need to add scope ---> _DID NOT WORK_
+- [ ] run columns again
+    - [x] with scope ---> Created segmentation faults
+    - [ ] wihtout the paralle for in the first for loop
 
 <br>
 
