@@ -3,9 +3,9 @@
 - [x] both methods have best results with the code that produces segmentation faults.
     - [x] Maybe something wrong with the curly braces ---> _NO_
     - [x] Maybe need to add scope ---> _DID NOT WORK_
-- [ ] run columns again
+- [x] run columns again
     - [x] with scope ---> Created segmentation faults
-    - [ ] wihtout the paralle for in the first for loop
+    - [x] wihtout the parallel for in the first for loop
 
 <br>
 
@@ -65,8 +65,9 @@ You have to figure out the following, with this order
     - yes keep them
 4. [ ] if rows method or columns method is better
     - columns method has a huge performance dip
-5. [ ] if something needs to run again
-    - [ ] run again for columns with no parallel code for the matrix initialization
+5. [x] if something needs to run again
+    - [x] run again for columns with no parallel code for the matrix initialization
+        * Is it better? ---> Still peak around 1000 iterations and not that much different, so I keep the old with parallel code
 
 What follows is a study of these
 
@@ -146,4 +147,4 @@ YES means there is, NO means there is not.
 
 # Latex tables
 
-- leave efficiency out - do onlu speedup
+- leave efficiency out - do only speedup
