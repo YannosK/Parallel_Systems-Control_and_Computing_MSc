@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # Main logic
     ###################################
 
-    method_dir = os.path.join('..', 'results', method)
+    method_dir = os.path.join('..', 'results', 'final_results', method)
     base_file = os.path.join(method_dir, 'speedup')     # DOING IT ONLY FOR SPEEDUP
 
     for schedule in schedules:

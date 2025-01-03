@@ -179,7 +179,7 @@ int back_substitution_by_column_p(
 ) {
     long long row, column;
 
-    // #pragma omp parallel for num_threads(threadcount) schedule(runtime)
+#pragma omp parallel for num_threads(threadcount) schedule(runtime)
     for(row = 0; row < (long long)n; row++)
         x[row] = b[row];
 
