@@ -154,6 +154,8 @@ YES means there is, NO means there is not.
 ## Things I have left out
 - no mention that I used a name without indexes for reduction variable on the rows method
 - no mention of the scope in rows method.
+- more discussions on super-linearities that are more in the rows method than the columns
 
 ## to-do
 - [ ] absolutely no other references to the reports.
+- [ ] guided,1 and dynamic,1 are not needed after all; they are the same with the default!

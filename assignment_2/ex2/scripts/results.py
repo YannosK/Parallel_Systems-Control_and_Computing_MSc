@@ -180,7 +180,7 @@ if __name__ == "__main__":
     iterations_start = 2500
     threadcount = [1, 2, 3, 4, 8]
     # chunks = ['default', '1', 'maxchunk']
-    chunks = ['default', '1']
+    chunks = ['maxchunk']
 
     #****************#
     # Logic
@@ -220,9 +220,6 @@ if __name__ == "__main__":
                     ef_result = [iterations]
                     sp_result = [iterations]
 
-                    # if average:
-                    #     for threads in threadcount:
-                    # else:
                     for threads in tqdm(threadcount, desc=f'Method: {method}, File: {ef_csv}, Iterations: {iterations}'):
                         if average:
                             
@@ -234,8 +231,8 @@ if __name__ == "__main__":
                                     [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule}\"')
                                 elif chunk == '1':
                                     [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},1\"')
-                                # elif chunk == 'maxchunk':
-                                #     [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                                elif chunk == 'maxchunk':
+                                    [speedup_temp, efficiency_temp] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
                                 else:
                                     raise ValueError('Wrong chunk value')
                                 
@@ -250,8 +247,8 @@ if __name__ == "__main__":
                                 [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule}\"')
                             elif chunk == '1':
                                 [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},1\"')
-                            # elif chunk == 'maxchunk':
-                            #     [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
+                            elif chunk == 'maxchunk':
+                                [speedup, efficiency] = get_results(threads, iterations, method, f'\"{schedule},{iterations // threads}\"')
                             else:
                                 raise ValueError('Wrong chunk value')
                         

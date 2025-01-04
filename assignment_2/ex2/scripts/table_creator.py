@@ -71,8 +71,10 @@ if __name__ == "__main__":
 
     iterations_start = 2500
     schedules = ['static', 'dynamic', 'guided']
+    # schedules = ['dynamic', 'guided']
     threadcount = [1, 2, 3, 4, 8]
-    chunks = ['default', '1']
+    # chunks = ['default', '1']
+    chunks = ['default', ['1', 'maxchunk']]
 
     ###################################
     # Main logic
@@ -82,16 +84,23 @@ if __name__ == "__main__":
     base_file = os.path.join(method_dir, 'speedup')     # DOING IT ONLY FOR SPEEDUP
 
     for schedule in schedules:
-        for chunk in chunks:
+        for ch in chunks:
+
+            if ch == 'default':
+                chunk = 'default'
+            else:
+                chunk = ch[0] if schedule == 'static' else ch[1]
 
             csv_file = base_file + '__' + schedule + '_' + chunk + '.csv'
             if not os.path.exists(csv_file):
                 raise FileNotFoundError(f"csv file: {csv_file} not found")
 
-            if chunk == 'default' :
+            if chunk == 'default':
                 schedule_str = schedule
             elif chunk == '1':
                 schedule_str = schedule + ', 1'
+            elif chunk == 'maxchunk':
+                schedule_str = schedule + ', maxchunk'
             
             tex_block += start_block.format(
                 Scheduling=schedule_str
