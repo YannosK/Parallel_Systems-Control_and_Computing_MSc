@@ -179,8 +179,7 @@ if __name__ == "__main__":
 
     iterations_start = 2500
     threadcount = [1, 2, 3, 4, 8]
-    # chunks = ['default', '1', 'maxchunk']
-    chunks = ['maxchunk']
+    chunks = ['default', '1', 'maxchunk']
 
     #****************#
     # Logic
