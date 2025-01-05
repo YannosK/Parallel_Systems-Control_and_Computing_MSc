@@ -3,18 +3,15 @@ import csv
 import os
 
 def csv_to_list(filename):
+    '''
+    Turn the contents of a csv file into a list
+    Excluding the header
+    '''
     with open(filename, 'r') as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header row
         return [row for row in reader]
     
-def string_to_power_of_ten(value: str) -> str:
-    if not value.isdigit() or not value.startswith("1") or any(c != '0' for c in value[1:]):
-        raise ValueError("Input must be a string like '10', '100', '1000', etc.")
-    exponent = len(value) - 1
-    return f"$10^{exponent}$"
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument('method', help='The method for back-substitution must either be \'rows\' or \'columns\'')
 
@@ -71,9 +68,7 @@ if __name__ == "__main__":
 
     iterations_start = 2500
     schedules = ['static', 'dynamic', 'guided']
-    # schedules = ['dynamic', 'guided']
     threadcount = [1, 2, 3, 4, 8]
-    # chunks = ['default', '1']
     chunks = ['default', ['1', 'maxchunk']]
 
     ###################################
@@ -112,8 +107,7 @@ if __name__ == "__main__":
 
             for value_row in valuelist:
                 tex_block += mid_block.format(
-                    # Iterations=string_to_power_of_ten(value_row[0]), # choose this for exponent notation
-                    Iterations=value_row[0], # choose this for full values
+                    Iterations=value_row[0],
                     Val_1=value_row[1],
                     Val_2=value_row[2],
                     Val_3=value_row[3],

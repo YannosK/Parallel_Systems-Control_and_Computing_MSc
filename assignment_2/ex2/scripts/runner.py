@@ -3,6 +3,10 @@ import subprocess
 import os
 
 def run_make():
+    '''
+    Runs necessary make commands
+    to build the executables
+    '''
 
     result = subprocess.run(['make', '-C', '../', 'clean'], text=True)
     if result.returncode != 0:
@@ -13,6 +17,11 @@ def run_make():
         print(f"Error: make exited with return code {result.returncode}")
 
 def run_schedule_variable_export(schedule : str):
+    '''
+    Changes the OMP_SCHEDULE variable
+    to the value of the input
+    to change the OpenMP schedule
+    '''
 
     os.environ['OMP_SCHEDULE'] = schedule
 
@@ -24,6 +33,11 @@ def run_schedule_variable_export(schedule : str):
         print(f'Environmental variable OMP_SCHEDULE set to {envar}')
 
 def run_exec(arg):
+    '''
+    Runs the executables
+    with commands line arguments
+    as a list of strings
+    '''
 
     app = ['../build/app'] + arg
 

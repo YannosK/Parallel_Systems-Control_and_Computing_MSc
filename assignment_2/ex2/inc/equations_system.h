@@ -26,8 +26,8 @@ int random_values_vector(double *v, size_t n);
  * A function to fill in a n x n matrix
  * with random elements in an upper triangular form.
  * The elements are produced by the `rand()` function.
- * They are in the range [-255, 255].
- * and even they are integers they are cast as doubles.
+ * They are in the range [-RAND_MAX, RAND_MAX].
+ * and even though they are integers they are cast as doubles.
  * This function has sequential execution and
  * it is regarded as an initialization function.
  *
@@ -42,10 +42,11 @@ int random_values_vector(double *v, size_t n);
 int upper_triangular_matrix(double **A, size_t n);
 
 /**
- * Back-substitution on the linear equation system with the computation executed
- * row by row. The equation system can be represented as A x = b x is a vector
- * containing the unknowns where A is an n x n upper triangular matrix with the
- * coefficients of the x's and b is a vector of the zero order coefficients.
+ * Back-substitution on the linear equation system with the computations
+ * executed row by row. The equation system can be represented as A x = b. x is
+ * a vector containing the unknowns and A is an n x n upper triangular matrix
+ * with the coefficients of the x's and b is a vector of the zero-order
+ * coefficients.
  *
  * This is a sequential execution algorithm.
  *
@@ -63,10 +64,10 @@ int upper_triangular_matrix(double **A, size_t n);
 int back_substitution_by_row(double **A, double *b, double *x, size_t n);
 
 /**
- * Back-substitution on the linear equation system with the computation executed
- * column by column. The equation system can be represented as A x = b x is a
- * vector containing the unknowns where A is an n x n upper triangular matrix
- * with the coefficients of the x's and b is a vector of the zero order
+ * Back-substitution on the linear equation system with the computations
+ * executed column by column. The equation system can be represented as A x = b.
+ * x is a vector containing the unknowns and A is an n x n upper triangular
+ * matrix with the coefficients of the x's and b is a vector of the zero order
  * coefficients.
  *
  * This is a sequential execution algorithm.
@@ -88,10 +89,11 @@ int back_substitution_by_column(double **A, double *b, double *x, size_t n);
  * @attention this is the multi-threaded version of `back_substitution_by_row(A,
  * b, x, n)` using OpenMP.
  *
- * Back-substitution on the linear equation system with the computation executed
- * row by row. The equation system can be represented as A x = b x is a vector
- * containing the unknowns where A is an n x n upper triangular matrix with the
- * coefficients of the x's and b is a vector of the zero order coefficients.
+ * Back-substitution on the linear equation system with the computations
+ * executed row by row. The equation system can be represented as A x = b. x is
+ * a vector  containing the unknowns and A is an n x n upper triangular matrix
+ * with the coefficients of the x's and b is a vector of the zero order
+ * coefficients.
  *
  * @param A the upper triangular n x n matrix of the coefficients
  * @param b the zero order coefficient vector
@@ -113,10 +115,10 @@ int back_substitution_by_row_p(
  * @attention this is the multi-threaded version of
  * `back_substitution_by_column(A, b, x, n)` using OpenMP.
  *
- * Back-substitution on the linear equation system with the computation executed
- * column by column. The equation system can be represented as A x = b x is a
- * vector containing the unknowns where A is an n x n upper triangular matrix
- * with the coefficients of the x's and b is a vector of the zero order
+ * Back-substitution on the linear equation system with the computations
+ * executed column by column. The equation system can be represented as A. x = b
+ * x is a vector containing the unknowns and A is an n x n upper triangular
+ * matrix with the coefficients of the x's and b is a vector of the zero order
  * coefficients.
  *
  * @param A the upper triangular n x n matrix of the coefficients
