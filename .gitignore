@@ -10,6 +10,7 @@ assignment_1/ex1/__pycache__/*
 assignment_1/ex2/__pycache__/*
 assignment_1/ex3/__pycache__/*
 assignment_1/ex4/__pycache__/*
+assignment_2/ex2/scripts/__pycache__/*
 
 assignment_2/ex1/__pycache__/*
 
@@ -21,16 +22,23 @@ assignment_1/ex3/initial/build/*
 assignment_1/ex3/solution_1/build/*
 assignment_1/ex3/solution_2/build/*
 assignment_1/ex4/bin/*
+assignment_2/ex2/build/*
 
 assignment_2/ex1/bin/*
 
 # help code
 assignment_1/helpcode/*
 template_main.c
+assignment_2/ex2/TO-DO.md
 
 # data
 assignment_1/ex1/data/*
 assignment_1/ex4/data/*
+assignment_2/ex2/scripts/system.ini
+assignment_2/ex2/results/rows
+assignment_2/ex2/results/columns
+assignment_2/ex2/results/latex_tables/columns_speedup.tex
+assignment_2/ex2/results/latex_tables/rows_speedup.tex
 
 assignment_2/ex1/data/*
 
