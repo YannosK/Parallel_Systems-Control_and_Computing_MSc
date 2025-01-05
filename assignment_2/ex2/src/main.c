@@ -1,4 +1,3 @@
-// #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,15 +10,10 @@
 #include "timer.h"
 
 ////////////////////////////////
-// Private defines
-///////////////////////////////
-
-////////////////////////////////
 // Global Variables
 ///////////////////////////////
 
-unsigned long i = 0; // iterator index
-int ret;             // return value holder variable
+int ret; // return value holder variable
 
 int main(int argc, char *argv[]) {
 
@@ -177,7 +171,7 @@ int main(int argc, char *argv[]) {
     }
 
     /***********************************
-     *  Delete, destroy and deallocation
+     *  Deallocations
      ***********************************/
 
     free(x);

@@ -1,17 +1,12 @@
-# Exercise Implementation
+# Topic Description
 
-In this problem, the user must input the number of threads and a number of iterations
+This exercise studies the parallelization of two back-substitution algorithms to solve linear systems of equations, that are represented by upper-triangular matrices, in the form:
 
-_Problem description_
+$$A \cdot x = b$$
 
-The C programs of this exercise take as arguments the number if threads and number of iterations.
-After they execute they print to the terminal the expected value of the common variable after processing and its actual value.
-They also computes the execution time.
+$A$ is the upper triangular coefficient matrix, $x$ is a vector of the unknown variables of the equations and $b$ is the zero-order coefficient vector.
 
-Python scripts are used to automate the build process and
-the execution for various thread counts and iterations.
-They also check that the expected and the actual value of the common variable is the same, for all the executions,
-and they gather the timing results and the computed efficiencies in .csv files
+The algorithms tested are back-substitution by row and back-substitution by column. They are written in the C Programming Language. For their parallel version OpenMP library is used.
 
 # Folder Structure
 
