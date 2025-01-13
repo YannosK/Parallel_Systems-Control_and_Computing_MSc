@@ -20,16 +20,6 @@
 // Function Declerations
 ///////////////////////////////
 
-void mpi_error_check(int local_ok, char fname[], char message[], MPI_Comm comm);
-// void mpi_init_problem(
-//     double local_A[], double local_x[], size_t local_m, size_t local_n,
-//     size_t m, size_t n, int my_rank, MPI_Comm comm
-// );
-// void mpi_matrix_vector_mul(
-//     double local_A[], double local_x[], double local_y[], size_t local_m,
-//     size_t local_n, size_t m, int my_rank, MPI_Comm comm
-// );
-
 ////////////////////////////////
 // Function Definitions
 ///////////////////////////////
@@ -45,6 +35,13 @@ int main(int argc, char *argv[]) {
     MPI_Comm comm; // MPI communicator for the program
 
     size_t n; // number of rows and columns of matrix
+
+    double *local_x; // local part of n x 1 vector x
+    double *local_A; // local part of n x n matrix A
+    double *local_y; // local part of n x 1 result vector y
+
+    size_t local_m; // number of rows of submatrix of A, local to the process
+    size_t local_n; // number of columns of submatrix of A, local to the process
 
     /***********************************
      *  Arguments check
@@ -117,11 +114,6 @@ int main(int argc, char *argv[]) {
      *  Deallocations and termination
      ***********************************/
 
-    //     free(local_x);
-    //     free(local_y);
-
-    //     free(local_A);
-
     MPI_Finalize();
 
     return 0;
@@ -132,12 +124,12 @@ int main(int argc, char *argv[]) {
 ///////////////////////////////
 
 /********************************************************************************
- * Check whether any process has found an error.  If so,
+ * Check whether any MPI process has found an error.  If so,
  * print message and terminate all processes.  Otherwise,
  * continue execution.
  *
- * @param local_ok 1 if calling process has found an error, 0 otherwise
- * @param fname name of function calling `mpi_error_check()`
+ * @param error_code code of error from the caller
+ * @param function_name name of the caller function
  * @param message message to print if there's an error
  * @param comm communicator containing processes calling this function.
  * should be `MPI_COMM_WORLD`.
@@ -146,18 +138,19 @@ int main(int argc, char *argv[]) {
  * The communicator containing the processes calling Check_for_error should be
  * `MPI_COMM_WORLD`.
  */
-void mpi_error_check(
-    int local_ok /* in */, char fname[] /* in */, char message[] /* in */,
-    MPI_Comm comm /* in */
+void error_check_mpi(
+    int error_code, char function_name[], char message[], MPI_Comm comm
 ) {
     int ok;
 
-    MPI_Allreduce(&local_ok, &ok, 1, MPI_INT, MPI_MIN, comm);
+    MPI_Allreduce(&error_code, &ok, 1, MPI_INT, MPI_MIN, comm);
     if(ok == 0) {
         int my_rank;
         MPI_Comm_rank(comm, &my_rank);
         if(my_rank == 0) {
-            fprintf(stderr, "Proc %d > In %s, %s\n", my_rank, fname, message);
+            fprintf(
+                stderr, "Proc %d > In %s, %s\n", my_rank, function_name, message
+            );
             fflush(stderr);
         }
         MPI_Finalize();
@@ -165,14 +158,114 @@ void mpi_error_check(
     }
 }
 
+/********************************************************************************
+ * Partition the size of the problem to local sizes
+ * in order to break down the vectors and the matrix
+ * to local counterparts, for parallel execution
+ *
+ * @param local_m pointer to variable of number of rows of local_A and elements
+ * of local_x
+ * @param local_n pointer to variable of number of columns of local_A and
+ * elements of local_y
+ * @param m number of rows of matrix A and elements of vector x
+ * @param n number of columns of matrix A and elements of vector y
+ * @param my_rank rank of MPI process calling this function
+ * @param comm communicator where the caller of this function belongs to
+ *
+ * @returns 0 if all run correctly.
+ * @returns 1 if there is no memory to allocate
+ *
+ * @warning
+ * This function must be called at the beginning of the program,
+ * after MPI is initialized and the size of the matrix and vectors is inputted.
+ * It assumes that `local_m` and `local_n` have no value yet.
+ * */
+int problem_size_partitioning(
+    size_t *local_m, size_t *local_n, size_t m, size_t n, MPI_Comm comm
+) {}
+
+/********************************************************************************
+ * Initialize local matrix and vectors:
+ * local memory allocations for variabels of private scope
+ * to the MPI process.
+ *
+ * @param local_x pointer to a local part of the vector x
+ * @param local_A pointer to a local part of the matrix A
+ * @param local_y pointer to a local part of the result vector y
+ * @param local_m number of rows of local_A and elements of local_x
+ * @param local_n number of columns of local_A and elements of local_y
+ * @param my_rank rank of MPI process calling this function
+ * @param comm communicator where the caller of this function belongs to
+ *
+ * @returns 0 if all run correctly.
+ * @returns 1 if there is no memory to allocate
+ *
+ * @warning
+ * This function must be called at the beginning of the program,
+ * after MPI is initialized and the size of the matrix and vectors is inputted
+ * and after the problem is partitioned to local sizes.
+ * It assumes that `local_x`, `local_y` and `local_A` are just declared as
+ * variables but not pointing anywhere.
+ * */
+int local_memory_allocations(
+    double *local_x, double *local_A, double *local_y, size_t *local_m,
+    size_t *local_n, size_t m, size_t n, MPI_Comm comm
+) {
+    local_x = (double *)calloc(sizeof(double), (*local_n));
+    local_A = (double *)calloc(sizeof(double), (*local_m) * (*local_n));
+    local_y = (double *)calloc(sizeof(double), (*local_m));
+
+    if(local_x == NULL || local_y == NULL || local_A == NULL) {
+        error_check_mpi(
+            1, "mpi_init_problem", "Cannot allocate enough memory", comm
+        );
+    }
+}
+
+/********************************************************************************
+ * Destroy local matrix and vectors:
+ * local memory deallocations for variabels of private scope
+ * to the MPI process.
+ *
+ * @param local_x pointer to a local part of the vector x
+ * @param local_A pointer to a local part of the matrix A
+ * @param local_y pointer to a local part of the result vector y
+ *
+ * @warning
+ * This function must be called at the end of the program,
+ * before calling `MPI_Finish()`.
+ * All the pointers to local values will remain dangling!
+ * */
+void local_memory_deallocations(
+    double *local_x, double *local_A, double *local_y
+) {
+    free(local_x);
+    free(local_A);
+    free(local_y);
+}
 // /********************************************************************************
-//  * initialize matrix and vectors and send the data.
+//  * initialize matrix and vectors and send the data
+//  * in process 0, and send the necessary data to other processes
+//  * so that they compute the
 //  *
 //  * This is done in the rank 0 process
+//  *
+//  * @param local_x pointer to a local part of the vector x
+//  * @param local_A pointer to a local part of the matrix A
+//  * @param local_y pointer to a local part of the result vector y
+//  * @param local_m number of rows of local_A and elements of local_x
+//  * @param local_n number of columns of local_A and elements of local_y
+//  * @param m number of rows of matrix A and elements of vector x
+//  * @param n number of columns of matrix A and elements of vector y
+//  * @param my_rank rank of MPI process calling this function
+//  * @param comm communicator where the caller of this function belongs to
+//  *
+//  * @returns 0 if all run correctly.
+//  * @returns 1 if there is no memory to allocate
 //  * */
-// void mpi_init_problem(
-//     double local_A[], double local_x[], size_t local_m, size_t local_n,
-//     size_t m, size_t n, int my_rank, MPI_Comm comm
+// int mpi_init_problem(
+//     double *local_x, double *local_A, double *local_y, size_t local_m,
+//     size_t local_n, size_t m, size_t n, int my_rank, MPI_Comm comm
 // ) {
 //     double *x = NULL;
 //     double *y = NULL;
@@ -180,15 +273,22 @@ void mpi_error_check(
 
 //     if(my_rank == 0) {
 
-//         // perform initializations
-//         x = (double *)calloc(sizeof(double), n);
+//         /***********************************
+//          *  Initializations
+//          ***********************************/
+
+//         x = (double *)calloc(sizeof(double), n);     // n x 1 vector
+//         A = (double *)calloc(sizeof(double), m * n); // m x n matrix
+//         y = (double *)calloc(sizeof(double), m);     // m x 1 result vector
+
+//         if(x == NULL || y == NULL || A == NULL) {
+//             mpi_error_check(
+//                 1, "mpi_init_problem", "Cannot allocate enough memory", comm
+//             );
+//         }
+
 //         random_values_vector(x, n);
-
-//         y = (double *)calloc(sizeof(double), m);
-//         random_values_vector(y, m);
-
-//         A = (double *)calloc(sizeof(double), m * n);
-//         random_values_cmatrix(A, m, n);
+//         random_values_matrix(A, m, n);
 
 //         // scatter chunks of A to all the processes
 //         MPI_Scatter(
