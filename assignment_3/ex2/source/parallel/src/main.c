@@ -34,6 +34,9 @@ int main(int argc, char *argv[]) {
     int my_rank;   // rank of current process
     MPI_Comm comm; // MPI communicator for the program
 
+    MPI_Datatype shared_data_mpi_t; // custom type that will contain everything
+                                    // that needs to be shared
+
     size_t n; // number of rows and columns of matrix
 
     double *local_x; // local part of n x 1 vector x
@@ -77,38 +80,9 @@ int main(int argc, char *argv[]) {
         exit(3);
     }
 
-    //     local_m = m / comm_sz; // this order is important or comm_sz might
-    //     not have
-    //                            // been initialized
-    //     local_n = n; // not saying so explicitly anywhere, but I just guessed
-
-    //     local_x = (double *)calloc(sizeof(double), local_n);
-    //     local_y = (double *)calloc(sizeof(double), local_m);
-
-    //     local_A = (double *)calloc(sizeof(double), local_m * local_n);
-
     /***********************************
      *  Execution of the program
      ***********************************/
-
-    //     mpi_init_problem(
-    //         local_A, local_x, local_m, local_n, m, n, my_rank, MPI_COMM_WORLD
-    //     );
-
-    //     mpi_matrix_vector_mul(
-    //         local_A, local_x, local_y, local_m, local_n, m, my_rank,
-    //         MPI_COMM_WORLD
-    //     );
-
-    // #ifdef VERBOSE
-    //     printf("\n\nRank %d\n", my_rank);
-    //     printf("matrix:\n");
-    //     cmatrix_printer(local_A, local_m, local_n);
-    //     printf("vector x:\n");
-    //     vector_printer(local_x, local_n);
-    //     printf("local y result is:");
-    //     vector_printer(local_y, local_m);
-    // #endif
 
     /***********************************
      *  Deallocations and termination
@@ -118,10 +92,6 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-////////////////////////////////
-// Function Definitions
-///////////////////////////////
 
 /********************************************************************************
  * Check whether any MPI process has found an error.  If so,
@@ -169,11 +139,11 @@ void error_check_mpi(
  * elements of local_y
  * @param m number of rows of matrix A and elements of vector x
  * @param n number of columns of matrix A and elements of vector y
- * @param my_rank rank of MPI process calling this function
+ * @param comm_sz the number of processes in the MPI communiator
  * @param comm communicator where the caller of this function belongs to
  *
  * @returns 0 if all run correctly.
- * @returns 1 if there is no memory to allocate
+ * @returns 2 if comm_sz does not divide the problem size exactly
  *
  * @warning
  * This function must be called at the beginning of the program,
@@ -181,8 +151,24 @@ void error_check_mpi(
  * It assumes that `local_m` and `local_n` have no value yet.
  * */
 int problem_size_partitioning(
-    size_t *local_m, size_t *local_n, size_t m, size_t n, MPI_Comm comm
-) {}
+    size_t *local_m, size_t *local_n, size_t m, size_t n, int comm_sz,
+    MPI_Comm comm
+) {
+
+    if((n <= (size_t)comm_sz) || (n % (size_t)comm_sz != 0)) {
+        error_check_mpi(
+            2, "problem_size_partitioning",
+            "problem size too small or not divizible by process number", comm
+        );
+        return 2;
+    }
+
+    (*local_m) = m; // number of rows remains m in column partitioning
+    (*local_n) = n / (size_t)comm_sz; // number of columns breaks down to blocks
+                                      // in column partitioning
+
+    return 0;
+}
 
 /********************************************************************************
  * Initialize local matrix and vectors:
@@ -217,10 +203,64 @@ int local_memory_allocations(
 
     if(local_x == NULL || local_y == NULL || local_A == NULL) {
         error_check_mpi(
-            1, "mpi_init_problem", "Cannot allocate enough memory", comm
+            1, "local_memory_allocation", "Cannot allocate enough memory", comm
         );
+        return 1;
     }
+
+    return 0;
 }
+
+/********************************************************************************
+ * This function initializes the custom MPI datatype
+ * that is needed to send data all around.
+ * More specifically it uses the entire matrix A
+ * and the entire vector x, a strating point for each,
+ * and `local_m` and `local_n` as offsets to create
+ * a struct type that will contain:
+ *
+ * - a x's block of size local_n x 1
+ *
+ * - an A's block of size local_m x local_n
+ *
+ * @param mpi_datatype_p pointer to the custom MPI datatype
+ * @param A pointer to the entire matrix A
+ * @param x pointer to the entire vactor x
+ * @param local_m number of rows of local_A and elements of local_x
+ * @param local_n number of columns of local_A and elements of local_y
+ * @param i_x starting index of x
+ * @param i_A starting index of A
+ *
+ * @warning
+ * - The MPI datatype must already be declared before insertion
+ *
+ * - the indexes of x must be a multiple of local_n
+ *
+ * - the indexes of A must be a multiple of local_n but not larger than n
+ *
+ */
+void build_mpi_type(
+    MPI_Datatype *mpi_datatype_p, double *A, double *x, size_t local_m,
+    size_t local_n, size_t i_x, size_t i_A
+) {
+    // local_m arrays of local_n elements from A and one local_n sized vector
+    // from x
+
+    int array_of_block_lengths[local_m + 1];
+
+    for(size_t i = 0; i < local_m + 1; i++)
+        array_of_block_lengths[i] = local_n;
+}
+
+/********************************************************************************
+ * This function creates the program data in
+ * process with rank 0.
+ * These data are the matrix and the vector that need to be multiplied.
+ * They will have random values.
+ * The data are communicated via a custom MPI data type
+ * that will be created in this function.
+ */
+void create_and_share_program_data() {}
 
 /********************************************************************************
  * Destroy local matrix and vectors:
@@ -243,6 +283,7 @@ void local_memory_deallocations(
     free(local_A);
     free(local_y);
 }
+
 // /********************************************************************************
 //  * initialize matrix and vectors and send the data
 //  * in process 0, and send the necessary data to other processes
