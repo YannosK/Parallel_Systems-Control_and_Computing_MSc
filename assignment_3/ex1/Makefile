@@ -1,6 +1,6 @@
-CC = gcc
+CC = mpicc
 CFLAGS = -Wall -Wextra -p -pg -Iinclude
-LIBS = -lm -fopenmp
+LIBS = -lm
 
 ifdef DEBUG
 	CFLAGS += -g -O0 -DDEBUG
@@ -28,6 +28,9 @@ $(EXEC): $(OBJ)
 $(BIN_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)  # Create necessary directories
 	@$(CC) $(CFLAGS) -c $< -o $@ $(LIBS)
+
+exec:
+	HWLOC_COMPONENTS="-gl" HWLOC_HIDE_ERRORS=1 mpirun -np 4 ./bin/main 10 10
 
 # Clean up generated files
 clean:
