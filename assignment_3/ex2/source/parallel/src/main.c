@@ -12,7 +12,8 @@
 // Local defines
 ///////////////////////////////
 
-#define DEBUG
+// #define DEBUG
+// #define VERBOSE
 
 ////////////////////////////////
 // Global Variables
@@ -28,13 +29,13 @@ int problem_size_partitioning(
 );
 
 int local_memory_allocations(
-    double **recv_buffer, double **result_buffer, size_t local_m,
-    size_t local_n, MPI_Comm comm
+    double **recv_buffer, double **result_buffer, double **y, size_t local_m,
+    size_t local_n, size_t m, int my_rank, MPI_Comm comm
 );
 
 int create_and_share_program_data(
     size_t m, size_t n, size_t local_m, size_t local_n, double **recv_buffer,
-    int comm_sz, int my_rank, MPI_Comm comm
+    double *timing_start, int comm_sz, int my_rank, MPI_Comm comm
 );
 
 void calculate_local_mult(
@@ -42,10 +43,13 @@ void calculate_local_mult(
 );
 
 void reduce_to_final_result(
-    double *result_buffer, size_t m, int my_rank, MPI_Comm comm
+    double *result_buffer, double **y, size_t m, double *timing_end,
+    int my_rank, MPI_Comm comm
 );
 
-void local_memory_deallocations(double **recv_buffer, double **result_buffer);
+void local_memory_deallocations(
+    double **recv_buffer, double **result_buffer, double **y
+);
 
 ////////////////////////////////
 // Function Definitions
@@ -65,9 +69,12 @@ int main(int argc, char *argv[]) {
 
     double *recv_buffer = NULL;   // receive buffer for data in custom MPI type
     double *result_buffer = NULL; // buffer for local results
+    double *y = NULL;             // final result vector
 
     size_t local_m; // number of rows of submatrix of A, local to the process
     size_t local_n; // number of columns of submatrix of A, local to the process
+
+    double local_start = 0.0, local_finish = 0.0, local_elapsed, elapsed = 0.0;
 
     /***********************************
      *  Arguments check
@@ -116,29 +123,39 @@ int main(int argc, char *argv[]) {
     problem_size_partitioning(&local_m, &local_n, n, n, comm_sz, comm);
 
     local_memory_allocations(
-        &recv_buffer, &result_buffer, local_m, local_n, comm
+        &recv_buffer, &result_buffer, &y, local_m, local_n, n, my_rank, comm
     );
 
     create_and_share_program_data(
-        n, n, local_m, local_n, &recv_buffer, comm_sz, my_rank, comm
+        n, n, local_m, local_n, &recv_buffer, &local_start, comm_sz, my_rank,
+        comm
     );
-
-    // #ifdef DEBUG
-    //     if(my_rank == 3) {
-    //         printf("\nLocal buffer of rank %d", my_rank);
-    //         vector_printer(recv_buffer, local_m * local_n + local_n);
-    //     }
-    // #endif
 
     calculate_local_mult(local_m, local_n, recv_buffer, &result_buffer);
 
-    reduce_to_final_result(result_buffer, n, my_rank, comm);
+    reduce_to_final_result(result_buffer, &y, n, &local_finish, my_rank, comm);
 
-    local_memory_deallocations(&recv_buffer, &result_buffer);
+    /***********************************
+     *  Timing of program
+     ***********************************/
+
+    local_elapsed = local_finish - local_start;
+    MPI_Reduce(&local_elapsed, &elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+
+    if(my_rank == 0) {
+
+#ifdef VERBOSE
+        printf("\nResult vector:\n");
+        vector_printer(y, n);
+#endif
+        printf("Parallel matrix-vector multiplication time: %lf\n", elapsed);
+    }
 
     /***********************************
      *  Deallocations and termination
      ***********************************/
+
+    local_memory_deallocations(&recv_buffer, &result_buffer, &y);
 
     MPI_Finalize();
 
@@ -229,8 +246,11 @@ int problem_size_partitioning(
  *
  * @param recv_buffer pointer to the local buffer that receives the intial data
  * @param result_buffer pointer to a local part of the result vector y
+ * @param y pointer to the final result buffer
  * @param local_m number of rows of local_A and elements of local_y
  * @param local_n number of columns of local_A and elements of local_x
+ * @param m number of rows of matrix A and elements of vector y
+ * @param my_rank rank of MPI process calling this function
  * @param comm communicator where the caller of this function belongs to
  *
  * @returns 0 if all run correctly.
@@ -244,8 +264,8 @@ int problem_size_partitioning(
  * variables but not pointing anywhere.
  * */
 int local_memory_allocations(
-    double **recv_buffer, double **result_buffer, size_t local_m,
-    size_t local_n, MPI_Comm comm
+    double **recv_buffer, double **result_buffer, double **y, size_t local_m,
+    size_t local_n, size_t m, int my_rank, MPI_Comm comm
 ) {
     /***********************************
      * Receive buffer
@@ -282,6 +302,26 @@ int local_memory_allocations(
             1, "local_memory_allocation", "Cannot allocate enough memory", comm
         );
         return 1;
+    }
+
+    if(my_rank == 0) {
+
+        /***********************************
+         * Final result buffer
+         * - resides in process 0
+         * - vector y
+         * - size m x 1
+         ***********************************/
+
+        (*y) = (double *)calloc(sizeof(double), m);
+
+        if((*y) == NULL) {
+            error_check_mpi(
+                1, "local_memory_allocation", "Cannot allocate enough memory",
+                comm
+            );
+            return 1;
+        }
     }
 
     return 0;
@@ -389,8 +429,8 @@ int build_mpi_type(
 
         // #ifdef DEBUG
         //         printf("\nArray of displacements has the following
-        //         values\n"); printf("For A index %lu and x index %lu\n", i_A,
-        //         i_x); for(size_t i = 0; i < local_m; i++) {
+        //         values\n"); printf("For A index %lu and x index %lu\n",
+        //         i_A, i_x); for(size_t i = 0; i < local_m; i++) {
         //             printf("%ld\n", array_of_displacements[i]);
         //         }
         // #endif
@@ -446,6 +486,8 @@ int build_mpi_type(
  * @param local_m number of rows of local_A and elements of local_y
  * @param local_n number of columns of local_A and elements of local_x
  * @param recv_buffer pointer to local buffer that receives the intial data
+ * @param timing_start a pointer to a local varibale used to snapshot the
+ * execution start
  * @param comm_sz the number of processes in the communicator
  * @param my_rank rank of MPI process calling this function
  * @param comm communicator where the caller of this function belongs to
@@ -463,7 +505,7 @@ int build_mpi_type(
  */
 int create_and_share_program_data(
     size_t m, size_t n, size_t local_m, size_t local_n, double **recv_buffer,
-    int comm_sz, int my_rank, MPI_Comm comm
+    double *timing_start, int comm_sz, int my_rank, MPI_Comm comm
 ) {
     double *A = NULL;
     double *x = NULL;
@@ -509,6 +551,12 @@ int create_and_share_program_data(
             (array_of_datatypes + i), A, x, local_m, local_n, n, local_n * i,
             local_n * i, my_rank, comm
         );
+
+    /***********************************
+     * Start timing the program
+     ***********************************/
+    MPI_Barrier(comm);
+    (*timing_start) = MPI_Wtime();
 
     if(my_rank == 0) {
 
@@ -601,7 +649,10 @@ void calculate_local_mult(
  * Effectively this function ends the program.
  *
  * @param result_buffer pointer to a local part of the result vector y
+ * @param y pointer to the final result buffer
  * @param m number of rows of matrix A and elements of result vector y
+ * @param timing_end a pointer to a local varibale used to snapshot the
+ * execution end
  * @param my_rank rank of MPI process calling this function
  * @param comm communicator where the caller of this function belongs to
  *
@@ -610,27 +661,18 @@ void calculate_local_mult(
  * function and all the previous calls it needs
  */
 void reduce_to_final_result(
-    double *result_buffer, size_t m, int my_rank, MPI_Comm comm
+    double *result_buffer, double **y, size_t m, double *timing_end,
+    int my_rank, MPI_Comm comm
 ) {
-    double *y = NULL; // result vector
     if(my_rank == 0) {
-        y = (double *)calloc(sizeof(double), m);
 
-        if(y == NULL) {
-            fprintf(stderr, "Memory allocation failed");
-            fflush(stderr);
-        }
+        MPI_Reduce(result_buffer, (*y), m, MPI_DOUBLE, MPI_SUM, 0, comm);
 
-        MPI_Reduce(result_buffer, y, m, MPI_DOUBLE, MPI_SUM, 0, comm);
+    } else {
+        MPI_Reduce(result_buffer, (*y), m, MPI_DOUBLE, MPI_SUM, 0, comm);
+    }
 
-#ifdef DEBUG
-        printf("\nResult vector:\n");
-        vector_printer(y, m);
-#endif
-
-        free(y);
-    } else
-        MPI_Reduce(result_buffer, y, m, MPI_DOUBLE, MPI_SUM, 0, comm);
+    (*timing_end) = MPI_Wtime();
 }
 
 /********************************************************************************
@@ -640,13 +682,17 @@ void reduce_to_final_result(
  *
  * @param recv_buffer pointer to local buffer that receives the intial data
  * @param result_buffer pointer to a local part of the result vector y
+ * @param y pointer to the final result buffer
  *
  * @warning
  * This function must be called at the end of the program,
  * before calling `MPI_Finish()`.
  * All the pointers to local values will remain dangling!
  * */
-void local_memory_deallocations(double **recv_buffer, double **result_buffer) {
+void local_memory_deallocations(
+    double **recv_buffer, double **result_buffer, double **y
+) {
     free(*recv_buffer);
     free(*result_buffer);
+    free(*y);
 }

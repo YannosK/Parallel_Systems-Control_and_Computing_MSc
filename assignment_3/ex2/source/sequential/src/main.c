@@ -12,7 +12,8 @@
 // Local defines
 ///////////////////////////////
 
-#define DEBUG
+// #define DEBUG
+// #define VERBOSE
 
 ////////////////////////////////
 // Function Definitions
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]) {
     matrix_vector_mult(A, x, y, n, n);
     GET_TIME(finish);
 
-#ifdef DEBUG
+#ifdef VERBOSE
     printf("\nResult vector y:\n");
     vector_printer(y, n);
 #endif
