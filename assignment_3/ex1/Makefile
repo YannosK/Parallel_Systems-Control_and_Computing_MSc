@@ -30,7 +30,7 @@ $(BIN_DIR)/%.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(LIBS)
 
 exec:
-	HWLOC_COMPONENTS="-gl" HWLOC_HIDE_ERRORS=1 mpirun -np 4 ./bin/main 10 10
+	HWLOC_COMPONENTS="-gl" HWLOC_HIDE_ERRORS=1 mpirun -np 2 ./bin/main 4 10
 
 # Clean up generated files
 clean:

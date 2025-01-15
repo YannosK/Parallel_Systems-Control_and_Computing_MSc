@@ -1,6 +1,6 @@
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 
 #ifdef DEBUG
@@ -8,6 +8,7 @@
 #define WAIT_US 200000
 #endif
 
+#include "error.h"
 #include "game_of_life.h"
 
 struct game_of_life_s {
@@ -28,18 +29,26 @@ struct game_of_life_s {
      */
     int *output_ptr;
     /*
-     * The edge size of the grid plus the borders.
+     * The grid rows plus the borders.
      */
-    int grid;
+    int grid_rows;
+
+    /*
+     * The grid columns plus the borders.
+     */
+    int grid_cols;
 };
 
-int gol_init(game_of_life_t *const gol, const int grid) {
+int gol_init(
+    game_of_life_t *const gol, const int grid_rows, const int grid_cols
+) {
     if((*gol = malloc(sizeof(struct game_of_life_s))) == NULL) {
         return 1;
     };
 
     int *input_ptr;
-    if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+    if((input_ptr = calloc((grid_rows + 2) * (grid_cols + 2), sizeof(int))) ==
+       NULL) {
         free(*gol);
         *gol = NULL;
 
@@ -47,7 +56,8 @@ int gol_init(game_of_life_t *const gol, const int grid) {
     };
 
     int *output_ptr;
-    if((output_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+    if((output_ptr = calloc((grid_rows + 2) * (grid_cols + 2), sizeof(int))) ==
+       NULL) {
         free(input_ptr);
 
         free(*gol);
@@ -58,7 +68,8 @@ int gol_init(game_of_life_t *const gol, const int grid) {
 
     (*gol)->input_ptr = input_ptr;
     (*gol)->output_ptr = output_ptr;
-    (*gol)->grid = grid + 2;
+    (*gol)->grid_rows = grid_rows + 2;
+    (*gol)->grid_cols = grid_cols + 2;
 
     return 0;
 }
@@ -77,42 +88,6 @@ int gol_destroy(game_of_life_t *const gol) {
     return 0;
 }
 
-int gol_parse_input_from_file(
-    const game_of_life_t *const gol, const char *const filename
-) {
-    FILE *file = fopen(filename, "r");
-    if(file == NULL) {
-        return 1;
-    }
-
-    int index = (*gol)->grid - 1;
-    int cell;
-
-    while(fscanf(file, "%d;", &cell) != EOF) {
-        // reached east border
-        if(index % ((*gol)->grid - 1) == 0) {
-            index += 2; // skip west border
-        }
-        *((*gol)->input_ptr + index++) = cell;
-    }
-
-    return 0;
-}
-
-void gol_random_input(const game_of_life_t *const gol) {
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    unsigned int seed = time.tv_usec + time.tv_sec * 1000000;
-
-    srand(seed);
-
-    for(int i = 1; i < (*gol)->grid - 1; i++) {
-        for(int j = 1; j < (*gol)->grid - 1; j++) {
-            *((*gol)->input_ptr + (*gol)->grid * i + j) = rand() % 2;
-        }
-    }
-}
-
 /*
  * Print the cells of the grid.
  *
@@ -122,16 +97,30 @@ void gol_random_input(const game_of_life_t *const gol) {
  *
  * Parameters:
  * - arr_ptr: the matrix.
- * - size: the size of the matrix.
+ * - rows: the number of rows.
+ * - cols: the number of columns.
+ * - show_borders: whether to show the horizontal borders or not.
  */
-void print_cells(const int *const arr_ptr, const int size) {
-    for(int i = 0; i < size; i++) {
-        for(int j = 0; j < size; j++)
-            if((i == 0) || (i == size - 1)) {
-                printf("-"); // horizontal border
-            } else if((j == 0) || (j == size - 1)) {
+void print_cells(
+    const int *const arr_ptr, const int rows, const int cols,
+    const int show_borders
+) {
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++)
+            if((i == 0) || (i == rows - 1)) {
+                if(show_borders) {
+                    printf("-"); // horizontal border
+                } else if((j == 0) || (j == cols - 1)) {
+                    printf("-"); // horizontal border
+                } else {
+                    if(*(arr_ptr + cols * i + j) == 0)
+                        printf(" "); // dead cell
+                    else
+                        printf("o"); // alive cell
+                }
+            } else if((j == 0) || (j == cols - 1)) {
                 printf("|"); // vertical border
-            } else if(*(arr_ptr + size * i + j) == 0)
+            } else if(*(arr_ptr + cols * i + j) == 0)
                 printf(" "); // dead cell
             else
                 printf("o"); // alive cell
@@ -139,56 +128,449 @@ void print_cells(const int *const arr_ptr, const int size) {
     }
 }
 
-void gol_execute(const game_of_life_t *const gol, const int generations) {
-    int neighbors;
-    int *temp_ptr;
+/*
+ * Parse input from file into an array.
+ *
+ * 1. No check about the size of the array is performed.
+ * 2. The array is assumed to be initialized with zeros.
+ * 3. The first and last rows and columns are not filled,
+ *    since they are treated as borders. The values on the
+ *    borders will remain as the array was initialized.
+ *
+ * Parameters:
+ * - filename: the name of the file to read from.
+ * - input_ptr: the pointer to the array.
+ * - grid: the total size of the square array.
+ *
+ * Returns:
+ * - 0 if the function executed successfully.
+ * - 1 if there an error occurred.
+ */
+int parse_input_from_file_to_array(
+    const char *const filename, int *const input_ptr, const int grid
+) {
+    FILE *file = fopen(filename, "r");
+    if(file == NULL) {
+        return 1;
+    }
 
-#ifdef DEBUG
-    printf("Initial state:\n");
-    print_cells((*gol)->input_ptr, (*gol)->grid);
-#endif
+    int index = grid - 1;
+    int cell;
 
-    for(int gen = 0; gen < generations; gen++) {
-        for(int i = 1; i < (*gol)->grid - 1; i++) {
-            for(int j = 1; j < (*gol)->grid - 1; j++) {
-                // Calculate the number of neighbors
-                neighbors =
-                    (*gol)->input_ptr[(*gol)->grid * (i - 1) + j] +
-                    (*gol)->input_ptr[(*gol)->grid * (i - 1) + (j + 1)] +
-                    (*gol)->input_ptr[(*gol)->grid * i + (j + 1)] +
-                    (*gol)->input_ptr[(*gol)->grid * (i + 1) + (j + 1)] +
-                    (*gol)->input_ptr[(*gol)->grid * (i + 1) + j] +
-                    (*gol)->input_ptr[(*gol)->grid * (i + 1) + (j - 1)] +
-                    (*gol)->input_ptr[(*gol)->grid * i + (j - 1)] +
-                    (*gol)->input_ptr[(*gol)->grid * (i - 1) + (j - 1)];
+    while(fscanf(file, "%d;", &cell) != EOF) {
+        // reached east border
+        if((index + 1) % (grid) == 0) {
+            index += 2; // skip west border
+        }
+        *(input_ptr + index++) = cell;
+    }
 
-                // Enforce the rules of the game of life
-                if((*gol)->input_ptr[(*gol)->grid * i + j] == 1) {
-                    if(neighbors < 2) { // underpopulation
-                        (*gol)->output_ptr[(*gol)->grid * i + j] = 0;
-                    } else if(neighbors < 4) {
-                        (*gol)->output_ptr[(*gol)->grid * i + j] = 1;
-                    } else { // overpopulation
-                        (*gol)->output_ptr[(*gol)->grid * i + j] = 0;
-                    }
-                } else {
-                    if(neighbors == 3) { // reproduction
-                        (*gol)->output_ptr[(*gol)->grid * i + j] = 1;
-                    } else {
-                        (*gol)->output_ptr[(*gol)->grid * i + j] = 0;
-                    }
-                }
-            }
+    return 0;
+}
+
+int gol_parse_input_from_file(
+    const game_of_life_t *const gol, const char *const filename, const int grid,
+    const int comm_sz, const int comm_rank, const MPI_Comm comm
+) {
+    if(comm_rank == 0) {
+        int *input_ptr;
+        if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+            return 1;
+        };
+
+        if(parse_input_from_file_to_array(filename, input_ptr, grid + 2) != 0) {
+            return 1;
         }
 
 #ifdef DEBUG
-        usleep(WAIT_US);
-        printf("After generation %d:\n", gen);
-        print_cells((*gol)->output_ptr, (*gol)->grid);
+        print_cells(input_ptr, grid + 2, grid + 2, 1);
 #endif
+
+        memcpy(
+            (*gol)->input_ptr, input_ptr,
+            (*gol)->grid_rows * (*gol)->grid_cols * sizeof(int)
+        );
+
+#ifdef DEBUG
+        print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
+#endif
+
+        for(int i = 1; i < comm_sz; i++) {
+            MPI_Send(
+                input_ptr + i * ((*gol)->grid_rows - 2) * (*gol)->grid_cols,
+                (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT, i, 0, comm
+            );
+        }
+
+        free(input_ptr);
+    } else {
+        MPI_Recv(
+            (*gol)->input_ptr, (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT,
+            0, 0, comm, MPI_STATUS_IGNORE
+        );
+
+#ifdef DEBUG
+        sleep(comm_rank);
+        print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
+#endif
+    }
+
+    return 0;
+}
+
+/*
+ * Fill the input array with random values in {0, 1}.
+ * The borders of the array are not filled and remain as is.
+ *
+ * Parameters:
+ * - input_ptr: the pointer to the array.
+ * - grid: the total size of the square array.
+ */
+void random_input(int *const input_ptr, const int grid) {
+    struct timeval time;
+    gettimeofday(&time, NULL);
+    unsigned int seed = time.tv_usec + time.tv_sec * 1000000;
+
+    srand(seed);
+
+    for(int i = 1; i < grid - 1; i++) {
+        for(int j = 1; j < grid - 1; j++) {
+            *(input_ptr + grid * i + j) = rand() % 2;
+        }
+    }
+}
+
+int gol_random_input(
+    const game_of_life_t *const gol, const int grid, const int comm_sz,
+    const int comm_rank, const MPI_Comm comm
+) {
+    if(comm_rank == 0) {
+        int *input_ptr;
+        if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+            return 1;
+        };
+
+        random_input(input_ptr, grid + 2);
+
+#ifdef DEBUG
+        print_cells(input_ptr, grid + 2, grid + 2, 1);
+#endif
+
+        memcpy(
+            (*gol)->input_ptr, input_ptr,
+            (*gol)->grid_rows * (*gol)->grid_cols * sizeof(int)
+        );
+
+#ifdef DEBUG
+        print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
+#endif
+
+        for(int i = 1; i < comm_sz; i++) {
+            MPI_Send(
+                input_ptr + i * ((*gol)->grid_rows - 2) * (*gol)->grid_cols,
+                (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT, i, 0, comm
+            );
+        }
+
+        free(input_ptr);
+    } else {
+        MPI_Recv(
+            (*gol)->input_ptr, (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT,
+            0, 0, comm, MPI_STATUS_IGNORE
+        );
+
+#ifdef DEBUG
+        sleep(comm_rank);
+        print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
+#endif
+    }
+
+    return 0;
+}
+
+/*
+ * Calculate the number of neighbors of a cell.
+ *
+ * Parameters:
+ * - gol: the game of life object.
+ * - i: the row of the cell.
+ * - j: the column of the cell.
+ *
+ * Returns:
+ * - the number of neighbors of the cell.
+ */
+int calculate_neighbors(
+    const game_of_life_t *const gol, const int i, const int j
+) {
+    return (*gol)->input_ptr[(*gol)->grid_cols * (i - 1) + j] +
+           (*gol)->input_ptr[(*gol)->grid_cols * (i - 1) + (j + 1)] +
+           (*gol)->input_ptr[(*gol)->grid_cols * i + (j + 1)] +
+           (*gol)->input_ptr[(*gol)->grid_cols * (i + 1) + (j + 1)] +
+           (*gol)->input_ptr[(*gol)->grid_cols * (i + 1) + j] +
+           (*gol)->input_ptr[(*gol)->grid_cols * (i + 1) + (j - 1)] +
+           (*gol)->input_ptr[(*gol)->grid_cols * i + (j - 1)] +
+           (*gol)->input_ptr[(*gol)->grid_cols * (i - 1) + (j - 1)];
+}
+
+/*
+ * Enforce the rules of the game of life. Those are:
+ *
+ * 1. Any live cell with fewer than two live neighbors dies, as if by
+ * underpopulation.
+ * 2. Any live cell with two or three live neighbors lives on to the next
+ * generation.
+ * 3. Any live cell with more than three live neighbors dies, as if by
+ * overpopulation.
+ * 4. Any dead cell with exactly three live neighbors becomes a live cell, as
+ * if by reproduction.
+ *
+ * Take from: https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+ *
+ * Parameters:
+ * - gol: the game of life object.
+ * - i: the row of the cell.
+ * - j: the column of the cell.
+ * - neighbors: the number of neighbors of the cell.
+ */
+void enforce_rules(
+    const game_of_life_t *const gol, const int i, const int j,
+    const int neighbors
+) {
+    // Alive cell
+    if((*gol)->input_ptr[(*gol)->grid_cols * i + j] == 1) {
+        if(neighbors < 2) { // underpopulation
+            (*gol)->output_ptr[(*gol)->grid_cols * i + j] = 0;
+        } else if(neighbors < 4) {
+            (*gol)->output_ptr[(*gol)->grid_cols * i + j] = 1;
+        } else { // overpopulation
+            (*gol)->output_ptr[(*gol)->grid_cols * i + j] = 0;
+        }
+    } else {
+        if(neighbors == 3) { // reproduction
+            (*gol)->output_ptr[(*gol)->grid_cols * i + j] = 1;
+        } else {
+            (*gol)->output_ptr[(*gol)->grid_cols * i + j] = 0;
+        }
+    }
+}
+
+/*
+ * Calculate the ranks for the north and south processes with with
+ * to exchange information.
+ *
+ * Parameters:
+ * - comm_rank: the rank of the current process.
+ * - comm_rank_north: the rank of the north process.
+ * - comm_rank_south: the rank of the south process.
+ * - comm_sz: the number of processes.
+ *
+ * Returns:
+ * - the ranks for the north and south processes. If the process is
+ * not valid then the rank is set to MPI_PROC_NULL.
+ */
+void exchange_neighbors(
+    const int comm_rank, int *const comm_rank_north, int *const comm_rank_south,
+    const int comm_sz
+) {
+    if(comm_rank - 1 < 0) {
+        *comm_rank_north = MPI_PROC_NULL;
+    } else {
+        *comm_rank_north = comm_rank - 1;
+    }
+
+    if(comm_rank + 1 >= comm_sz) {
+        *comm_rank_south = MPI_PROC_NULL;
+    } else {
+        *comm_rank_south = comm_rank + 1;
+    }
+}
+
+/*
+ * Exchange information with the north process.
+ *
+ * If the north process is not valid, then the
+ * function returns immediately.
+ *
+ * On the other hand, the sending process sends
+ * the first non-border line of its grid to the
+ * north process and stores the receiving line
+ * from the north process in the first line
+ * of its grid (the border).
+ *
+ * Parameters:
+ * - gol: the game of life object.
+ * - comm_rank_north: the rank of the north process.
+ * - comm: the MPI communicator.
+ */
+void exchange_north(
+    const game_of_life_t *const gol, const int comm_rank_north,
+    const MPI_Comm comm
+) {
+    if(comm_rank_north == MPI_PROC_NULL) {
+        return;
+    }
+
+    const void *sendbuf = (*gol)->input_ptr + (*gol)->grid_cols;
+    int sendcount = (*gol)->grid_cols;
+    void *recvbuf = (*gol)->input_ptr;
+    int recvcount = (*gol)->grid_cols;
+
+    // #ifdef DEBUG
+    //     sleep(comm_rank_north);
+    //     printf("----------- North -----------\n");
+    //     print_cells(sendbuf, 1, sendcount, 0);
+    //     fflush(stdout);
+    // #endif
+
+    MPI_Sendrecv(
+        sendbuf, sendcount, MPI_INT, comm_rank_north, 0, recvbuf, recvcount,
+        MPI_INT, comm_rank_north, 0, comm, MPI_STATUS_IGNORE
+    );
+
+    // #ifdef DEBUG
+    //     print_cells(recvbuf, 1, recvcount, 0);
+    //     fflush(stdout);
+    // #endif
+}
+
+/*
+ * Exchange information with the south process.
+ *
+ * If the south process is not valid, then the
+ * function returns immediately.
+ *
+ * On the other hand, the sending process sends
+ * the last non-border line of its grid to the
+ * south process and stores the receiving line
+ * from the south process in the last line
+ * of its grid (the border).
+ *
+ * Parameters:
+ * - gol: the game of life object.
+ * - comm_rank_south: the rank of the south process.
+ * - comm: the MPI communicator.
+ */
+void exchange_south(
+    const game_of_life_t *const gol, const int comm_rank_south,
+    const MPI_Comm comm
+) {
+    if(comm_rank_south == MPI_PROC_NULL) {
+        return;
+    }
+
+    const void *sendbuf =
+        (*gol)->input_ptr + (*gol)->grid_cols * ((*gol)->grid_rows - 2);
+    int sendcount = (*gol)->grid_cols;
+    void *recvbuf =
+        (*gol)->input_ptr + ((*gol)->grid_cols) * ((*gol)->grid_rows - 1);
+    int recvcount = (*gol)->grid_cols;
+
+    // #ifdef DEBUG
+    //     sleep(comm_rank_south);
+    //     printf("----------- South -----------\n");
+    //     print_cells(sendbuf, 1, sendcount, 0);
+    //     fflush(stdout);
+    // #endif
+
+    MPI_Sendrecv(
+        sendbuf, sendcount, MPI_INT, comm_rank_south, 0, recvbuf, recvcount,
+        MPI_INT, comm_rank_south, 0, comm, MPI_STATUS_IGNORE
+    );
+
+    // #ifdef DEBUG
+    //     print_cells(recvbuf, 1, recvcount, 0);
+    //     fflush(stdout);
+    // #endif
+}
+
+void gol_execute(
+    const game_of_life_t *const gol, const int comm_sz, const int comm_rank,
+    const MPI_Comm comm, const int generations
+) {
+    int neighbors;
+    int *temp_ptr;
+    int comm_rank_north, comm_rank_south;
+
+#ifdef DEBUG
+    MPI_Barrier(comm);
+    sleep(comm_rank);
+    if(comm_rank == 0) {
+        printf("Initial Configuration:\n");
+    }
+    print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 1);
+#endif
+
+    for(int gen = 0; gen < generations; gen++) {
+        exchange_neighbors(
+            comm_rank, &comm_rank_north, &comm_rank_south, comm_sz
+        );
+
+        exchange_north(gol, comm_rank_north, comm);
+        exchange_south(gol, comm_rank_south, comm);
+
+        // Iterate over non-border cells
+        for(int i = 1; i < (*gol)->grid_rows - 1; i++) {
+            for(int j = 1; j < (*gol)->grid_cols - 1; j++) {
+                // Calculate the number of neighbors
+                neighbors = calculate_neighbors(gol, i, j);
+                // Enforce the rules of the game of life
+                enforce_rules(gol, i, j, neighbors);
+            }
+        }
 
         temp_ptr = (*gol)->input_ptr;
         (*gol)->input_ptr = (*gol)->output_ptr;
         (*gol)->output_ptr = temp_ptr;
+
+#ifdef DEBUG
+        MPI_Barrier(comm);
+        sleep(comm_rank);
+        if(comm_rank == 0) {
+            printf("After generation %d:\n", gen);
+        }
+        print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 1);
+#endif
+
+        MPI_Barrier(comm);
     }
+}
+
+int gol_print(
+    const game_of_life_t *const gol, const int grid, const int comm_sz,
+    const int comm_rank, const MPI_Comm comm
+) {
+    int local_grid_elements = (*gol)->grid_cols * ((*gol)->grid_rows - 2);
+
+    if(comm_rank == 0) {
+        int *input_ptr;
+        if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+            return 1;
+        };
+
+        memcpy(
+            input_ptr, (*gol)->input_ptr,
+            ((*gol)->grid_rows - 1) * (*gol)->grid_cols * sizeof(int)
+        );
+
+        int step = (*gol)->grid_cols * ((*gol)->grid_rows - 1);
+
+        for(int i = 1; i < comm_sz; i++) {
+            MPI_Recv(
+                input_ptr + i * step, local_grid_elements, MPI_INT, i, 0, comm,
+                MPI_STATUS_IGNORE
+            );
+        }
+
+        print_cells(input_ptr, grid + 2, grid + 2, 1);
+
+        free(input_ptr);
+    } else {
+
+        MPI_Send(
+            (*gol)->input_ptr + (*gol)->grid_cols, local_grid_elements, MPI_INT,
+            0, 0, comm
+        );
+    }
+
+    return 0;
 }
