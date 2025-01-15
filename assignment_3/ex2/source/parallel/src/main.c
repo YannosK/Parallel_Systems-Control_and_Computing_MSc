@@ -126,6 +126,15 @@ int main(int argc, char *argv[]) {
         &recv_buffer, &result_buffer, &y, local_m, local_n, n, my_rank, comm
     );
 
+#ifdef DEBUG
+    if(my_rank == 0) {
+        printf(
+            "\nlocal_m: %lu\nlocal_n: %lu\ncomm_sz: %d", local_m, local_n,
+            comm_sz
+        );
+    }
+#endif
+
     create_and_share_program_data(
         n, n, local_m, local_n, &recv_buffer, &local_start, comm_sz, my_rank,
         comm
@@ -182,8 +191,8 @@ void error_check_mpi(
 ) {
     int ok;
 
-    MPI_Allreduce(&error_code, &ok, 1, MPI_INT, MPI_MIN, comm);
-    if(ok == 0) {
+    MPI_Allreduce(&error_code, &ok, 1, MPI_INT, MPI_MAX, comm);
+    if(ok != 0) {
         int my_rank;
         MPI_Comm_rank(comm, &my_rank);
         if(my_rank == 0) {
@@ -224,7 +233,7 @@ int problem_size_partitioning(
     MPI_Comm comm
 ) {
 
-    if((n <= (size_t)comm_sz) || (n % (size_t)comm_sz != 0)) {
+    if((n < (size_t)comm_sz) || (n % (size_t)comm_sz != 0)) {
         error_check_mpi(
             2, "problem_size_partitioning",
             "problem size too small or not divizible by process number", comm
