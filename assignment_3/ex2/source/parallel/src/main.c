@@ -12,6 +12,8 @@
 // Local defines
 ///////////////////////////////
 
+#define DEBUG
+
 ////////////////////////////////
 // Global Variables
 ///////////////////////////////
@@ -19,6 +21,31 @@
 ////////////////////////////////
 // Function Declerations
 ///////////////////////////////
+
+int problem_size_partitioning(
+    size_t *local_m, size_t *local_n, size_t m, size_t n, int comm_sz,
+    MPI_Comm comm
+);
+
+int local_memory_allocations(
+    double **recv_buffer, double **result_buffer, size_t local_m,
+    size_t local_n, MPI_Comm comm
+);
+
+int create_and_share_program_data(
+    size_t m, size_t n, size_t local_m, size_t local_n, double **recv_buffer,
+    int comm_sz, int my_rank, MPI_Comm comm
+);
+
+void calculate_local_mult(
+    size_t local_m, size_t local_n, double *recv_buffer, double **result_buffer
+);
+
+void reduce_to_final_result(
+    double *result_buffer, size_t m, int my_rank, MPI_Comm comm
+);
+
+void local_memory_deallocations(double **recv_buffer, double **result_buffer);
 
 ////////////////////////////////
 // Function Definitions
@@ -34,17 +61,10 @@ int main(int argc, char *argv[]) {
     int my_rank;   // rank of current process
     MPI_Comm comm; // MPI communicator for the program
 
-    MPI_Datatype shared_data_mpi_t; // custom type that will contain everything
-                                    // that needs to be shared
-
     size_t n; // number of rows and columns of matrix
 
-    // double *local_x; // local part of n x 1 vector x
-    // double *local_A; // local part of n x n matrix A
-    // double *local_y; // local part of n x 1 result vector y
-
-    double *recv_buffer;   // receive buffer for packed data in custom MPI type
-    double *result_buffer; // buffer for local results
+    double *recv_buffer = NULL;   // receive buffer for data in custom MPI type
+    double *result_buffer = NULL; // buffer for local results
 
     size_t local_m; // number of rows of submatrix of A, local to the process
     size_t local_n; // number of columns of submatrix of A, local to the process
@@ -70,15 +90,21 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(comm, &comm_sz);
     MPI_Comm_rank(comm, &my_rank);
 
-    if(comm_sz >= (int)n) {
+    if(comm_sz > (int)n) {
         if(my_rank == 0)
-            fprintf(stderr, "Too small problem size and too many processes\n");
+            fprintf(
+                stderr,
+                "Too small problem size (%lu) and too many processes (%d)\n", n,
+                comm_sz
+            );
         exit(2);
     } else if((int)n % comm_sz != 0) {
         if(my_rank == 0)
             fprintf(
                 stderr,
-                "Problem size must be divisible by the number of processes\n"
+                "Problem size (%lu) must be divisible by the number of "
+                "processes (%d)\n",
+                n, comm_sz
             );
         exit(3);
     }
@@ -86,6 +112,29 @@ int main(int argc, char *argv[]) {
     /***********************************
      *  Execution of the program
      ***********************************/
+
+    problem_size_partitioning(&local_m, &local_n, n, n, comm_sz, comm);
+
+    local_memory_allocations(
+        &recv_buffer, &result_buffer, local_m, local_n, comm
+    );
+
+    create_and_share_program_data(
+        n, n, local_m, local_n, &recv_buffer, comm_sz, my_rank, comm
+    );
+
+    // #ifdef DEBUG
+    //     if(my_rank == 3) {
+    //         printf("\nLocal buffer of rank %d", my_rank);
+    //         vector_printer(recv_buffer, local_m * local_n + local_n);
+    //     }
+    // #endif
+
+    calculate_local_mult(local_m, local_n, recv_buffer, &result_buffer);
+
+    reduce_to_final_result(result_buffer, n, my_rank, comm);
+
+    local_memory_deallocations(&recv_buffer, &result_buffer);
 
     /***********************************
      *  Deallocations and termination
@@ -178,7 +227,7 @@ int problem_size_partitioning(
  * local memory allocations for variabels of private scope
  * to the MPI process.
  *
- * @param recv_buffer pointer to local buffer that receives the intial data
+ * @param recv_buffer pointer to the local buffer that receives the intial data
  * @param result_buffer pointer to a local part of the result vector y
  * @param local_m number of rows of local_A and elements of local_y
  * @param local_n number of columns of local_A and elements of local_x
@@ -195,8 +244,8 @@ int problem_size_partitioning(
  * variables but not pointing anywhere.
  * */
 int local_memory_allocations(
-    double *recv_buffer, double *result_buffer, size_t local_m, size_t local_n,
-    MPI_Comm comm
+    double **recv_buffer, double **result_buffer, size_t local_m,
+    size_t local_n, MPI_Comm comm
 ) {
     /***********************************
      * Receive buffer
@@ -206,14 +255,19 @@ int local_memory_allocations(
      *  + subvector of local_n x 1
      ***********************************/
 
-    recv_buffer = (double *)calloc(sizeof(double), local_m * local_n + local_n);
+    size_t recv_buffer_len = local_m * local_n + local_n;
+    double *recv_buffer_p;
 
-    if(recv_buffer == NULL) {
+    recv_buffer_p = (double *)calloc(sizeof(double), recv_buffer_len);
+
+    if(recv_buffer_p == NULL) {
         error_check_mpi(
             1, "local_memory_allocation", "Cannot allocate enough memory", comm
         );
         return 1;
     }
+
+    (*recv_buffer) = recv_buffer_p;
 
     /***********************************
      * Result buffer
@@ -221,9 +275,9 @@ int local_memory_allocations(
      * - vector of local_m x 1
      ***********************************/
 
-    result_buffer = (double *)calloc(sizeof(double), local_m);
+    (*result_buffer) = (double *)calloc(sizeof(double), local_m);
 
-    if(result_buffer == NULL) {
+    if((*result_buffer) == NULL) {
         error_check_mpi(
             1, "local_memory_allocation", "Cannot allocate enough memory", comm
         );
@@ -253,6 +307,7 @@ int local_memory_allocations(
  * @param n the number of columns of matrix A
  * @param i_x starting index of x
  * @param i_A starting index of A
+ * @param my_rank rank of MPI process calling this function
  * @param comm communicator where the caller of this function belongs to
  *
  * @returns 0 if correct
@@ -270,7 +325,7 @@ int local_memory_allocations(
  */
 int build_mpi_type(
     MPI_Datatype *mpi_datatype_p, double *A, double *x, size_t local_m,
-    size_t local_n, size_t n, size_t i_x, size_t i_A, MPI_Comm comm
+    size_t local_n, size_t n, size_t i_x, size_t i_A, int my_rank, MPI_Comm comm
 ) {
     /***********************************
      * Indexes check
@@ -297,7 +352,7 @@ int build_mpi_type(
      * as one element
      ***********************************/
 
-    int count = local_m + 1; //!!!!!!!!!!!!!!!!!!!!!!!!
+    int count = local_m + 1;
 
     /***********************************
      * Specifying block lengths
@@ -319,17 +374,32 @@ int build_mpi_type(
      ***********************************/
 
     MPI_Aint array_of_displacements[local_m + 1];
-    MPI_Aint prev_a, next_a;
 
-    MPI_Get_address((A + i_A), &prev_a);
-    for(size_t i = 0; i < local_m; i++) {
-        MPI_Get_address((A + i_A + i * n), &next_a);
-        array_of_displacements[i] = next_a - prev_a;
-        prev_a = next_a;
+    if(my_rank == 0) {
+        MPI_Aint base_addr, next_addr;
+
+        MPI_Get_address(A, &base_addr);
+        for(size_t i = 0; i < local_m; i++) {
+            MPI_Get_address((A + i_A + i * n), &next_addr);
+            array_of_displacements[i] = next_addr - base_addr;
+        }
+
+        MPI_Get_address((x + i_x), &next_addr);
+        array_of_displacements[local_m] = next_addr - base_addr;
+
+        // #ifdef DEBUG
+        //         printf("\nArray of displacements has the following
+        //         values\n"); printf("For A index %lu and x index %lu\n", i_A,
+        //         i_x); for(size_t i = 0; i < local_m; i++) {
+        //             printf("%ld\n", array_of_displacements[i]);
+        //         }
+        // #endif
+
+    } else {
+        for(size_t i = 0; i < local_m + 1; i++) {
+            array_of_displacements[i] = i * local_n * sizeof(double);
+        }
     }
-
-    MPI_Get_address((x + i_x), &next_a);
-    array_of_displacements[local_m] = next_a - prev_a;
 
     /***********************************
      * Specifying the datatypes
@@ -376,7 +446,6 @@ int build_mpi_type(
  * @param local_m number of rows of local_A and elements of local_y
  * @param local_n number of columns of local_A and elements of local_x
  * @param recv_buffer pointer to local buffer that receives the intial data
- * @param result_buffer pointer to a local part of the result vector y
  * @param comm_sz the number of processes in the communicator
  * @param my_rank rank of MPI process calling this function
  * @param comm communicator where the caller of this function belongs to
@@ -393,9 +462,12 @@ int build_mpi_type(
  *
  */
 int create_and_share_program_data(
-    size_t m, size_t n, size_t local_m, size_t local_n, double *recv_buffer,
-    double *result_buffer, int comm_sz, int my_rank, MPI_Comm comm
+    size_t m, size_t n, size_t local_m, size_t local_n, double **recv_buffer,
+    int comm_sz, int my_rank, MPI_Comm comm
 ) {
+    double *A = NULL;
+    double *x = NULL;
+
     MPI_Datatype array_of_datatypes[comm_sz];
 
     if(my_rank == 0) {
@@ -407,8 +479,8 @@ int create_and_share_program_data(
          * - fill with random values
          ***********************************/
 
-        double *A = (double *)calloc(sizeof(double), m * n);
-        double *x = (double *)calloc(sizeof(double), n);
+        A = (double *)calloc(sizeof(double), m * n);
+        x = (double *)calloc(sizeof(double), n);
 
         if(A == NULL || x == NULL) {
             fprintf(stderr, "Memory allocation failed");
@@ -424,18 +496,21 @@ int create_and_share_program_data(
         printf("\nMatrix A:\n");
         matrix_printer(A, m, n);
 #endif
+    }
 
-        /***********************************
-         * Custom types
-         * - breaking A into submatrixes
-         * - breaking x into subvectors
-         ***********************************/
+    /***********************************
+     * Custom types
+     * - breaking A into submatrixes
+     * - breaking x into subvectors
+     ***********************************/
 
-        for(int i = 0; i < comm_sz; i++)
-            build_mpi_type(
-                (array_of_datatypes + i), A, x, local_m, local_n, n,
-                (x + local_n * i), (A + local_n * i), comm
-            );
+    for(int i = 0; i < comm_sz; i++)
+        build_mpi_type(
+            (array_of_datatypes + i), A, x, local_m, local_n, n, local_n * i,
+            local_n * i, my_rank, comm
+        );
+
+    if(my_rank == 0) {
 
         /***********************************
          * Scatter the data to the processes
@@ -450,10 +525,10 @@ int create_and_share_program_data(
         // keep local data
         for(size_t i = 0; i < local_m; i++) {
             for(size_t j = 0; j < local_n; j++)
-                recv_buffer[i * local_n + j] = A[i * n + j];
+                *((*recv_buffer) + i * local_n + j) = A[i * n + j];
         }
-        for(size_t k = 0; k < local_m; k++)
-            recv_buffer[local_m * local_n + k] = x[k];
+        for(size_t k = 0; k < local_n; k++)
+            *((*recv_buffer) + local_m * local_n + k) = x[k];
 
         // send data to others
         for(int rank = 1; rank < comm_sz; rank++)
@@ -474,7 +549,7 @@ int create_and_share_program_data(
          * - automatically stored to local buff
          ***********************************/
         MPI_Recv(
-            recv_buffer, 1, array_of_datatypes[my_rank], 0, 0, comm,
+            (*recv_buffer), 1, array_of_datatypes[my_rank], 0, 0, comm,
             MPI_STATUS_IGNORE
         );
     }
@@ -485,6 +560,8 @@ int create_and_share_program_data(
 
     for(int i = 0; i < comm_sz; i++)
         MPI_Type_free(array_of_datatypes + i);
+
+    return 0;
 }
 
 /********************************************************************************
@@ -507,11 +584,11 @@ int create_and_share_program_data(
  * - The user is responsible to input correct sizes
  * */
 void calculate_local_mult(
-    size_t local_m, size_t local_n, double *recv_buffer, double *result_buffer
+    size_t local_m, size_t local_n, double *recv_buffer, double **result_buffer
 ) {
 
     matrix_vector_mult(
-        recv_buffer, recv_buffer + local_m * local_n, result_buffer, local_m,
+        recv_buffer, recv_buffer + local_m * local_n, *result_buffer, local_m,
         local_n
     );
 }
@@ -569,7 +646,7 @@ void reduce_to_final_result(
  * before calling `MPI_Finish()`.
  * All the pointers to local values will remain dangling!
  * */
-void local_memory_deallocations(double *recv_buffer, double *result_buffer) {
-    free(recv_buffer);
-    free(result_buffer);
+void local_memory_deallocations(double **recv_buffer, double **result_buffer) {
+    free(*recv_buffer);
+    free(*result_buffer);
 }

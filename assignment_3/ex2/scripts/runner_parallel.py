@@ -1,5 +1,7 @@
 import argparse
 import subprocess
+import os
+import glob
 
 ##############################################################
 # Function definitions
@@ -57,6 +59,9 @@ def run_exec(n, arg):
 parser = argparse.ArgumentParser()
 parser.add_argument('processcount', help='The number of processes')
 parser.add_argument('size', help='Number of rows and columns of the square matrix - problem size')
+parser.add_argument('-c', '--clean',
+                    action='store_true',
+                    help='Cleans up possible MPI backtrace files')
 
 ##############################################################
 # main program logic
@@ -72,7 +77,7 @@ if __name__ == "__main__":
         if int(args.size) % int(args.processcount) != 0:
             raise AssertionError("Processes should be divisible from the problem size")
     
-    arg = [value for key, value in vars(args).items() if key not in ['processcount'] and value is not None]
+    arg = [value for key, value in vars(args).items() if key not in ['processcount', 'clean'] and value is not None]
 
     print('\n**************************\nBuild\n**************************\n')
     run_make()
@@ -81,4 +86,13 @@ if __name__ == "__main__":
     run_exec(args.processcount ,arg)
 
     print('\n')
+
+    if args.clean:
+        btr_files = glob.glob("*.btr")
+        for file in btr_files:
+            try:
+                os.remove(file)
+            except Exception as e:
+                print(f"Error removing {file}: {e}")
+
 
