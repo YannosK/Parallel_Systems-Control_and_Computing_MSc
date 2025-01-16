@@ -45,6 +45,7 @@ assignment_2/ex2/results/columns
 assignment_2/ex2/results/latex_tables/columns_speedup.tex
 assignment_2/ex2/results/latex_tables/rows_speedup.tex
 assignment_2/ex1/data/*
+assignment_3/ex2/results/sequential
 
 #configuration
 assignment_1/ex1/conf.py

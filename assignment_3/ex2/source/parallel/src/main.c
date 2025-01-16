@@ -32,9 +32,8 @@ int local_memory_allocations(
 
 int parallel_matrix_vector_multiplication(
     size_t m, size_t n, size_t local_m, size_t local_n, double **A, double **x,
-    double **y, double **recv_buffer, double **result_buffer,
-    double *timing_start, double *timing_end, int comm_sz, int my_rank,
-    MPI_Comm comm
+    double **y, double **recv_buffer, double **result_buffer, double *exec_time,
+    double *share_time, int comm_sz, int my_rank, MPI_Comm comm
 );
 
 void local_memory_deallocations(
@@ -68,7 +67,8 @@ int main(int argc, char *argv[]) {
     size_t local_m; // number of rows of submatrix of A, local to the process
     size_t local_n; // number of columns of submatrix of A, local to the process
 
-    double local_start = 0.0, local_finish = 0.0, local_elapsed, elapsed = 0.0;
+    double local_exec_time = 0.0, local_share_time = 0.0, exec_time = 0.0,
+           share_time = 0.0;
 
     /***********************************
      *  Arguments check
@@ -123,15 +123,15 @@ int main(int argc, char *argv[]) {
 
     parallel_matrix_vector_multiplication(
         n, n, local_m, local_n, &A, &x, &y, &recv_buffer, &result_buffer,
-        &local_start, &local_finish, comm_sz, my_rank, comm
+        &local_exec_time, &local_share_time, comm_sz, my_rank, comm
     );
 
     /***********************************
      * Results of program
      ***********************************/
 
-    local_elapsed = local_finish - local_start;
-    MPI_Reduce(&local_elapsed, &elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&local_exec_time, &exec_time, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
+    MPI_Reduce(&local_share_time, &share_time, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
 
     if(my_rank == 0) {
 
@@ -139,7 +139,14 @@ int main(int argc, char *argv[]) {
         printf("\nResult vector:\n");
         vector_printer(y, n);
 #endif
-        printf("Parallel matrix-vector multiplication time: %lf\n", elapsed);
+        printf(
+            "Parallel matrix-vector multiplication execution time: %lf\n",
+            exec_time
+        );
+        printf(
+            "Parallel matrix-vector multiplication data sharing time: %lf\n",
+            share_time
+        );
     }
 
     /***********************************
@@ -502,10 +509,8 @@ int build_mpi_type(
  * @param y pointer to the final result buffer of vector y
  * @param recv_buffer pointer to local buffer that receives the intial data
  * @param result_buffer pointer to a local part of the result vector y
- * @param timing_start a pointer to a local varibale used to snapshot the
- * execution start
- * @param timing_end a pointer to a local varibale used to snapshot the end of
- * execution
+ * @param exec_time a pointer to a local varibale of the execution time
+ * @param share_time a pointer to a local varibale of the data sharing time
  * @param comm_sz the number of processes in the communicator
  * @param my_rank rank of MPI process calling this function
  * @param comm communicator where the caller of this function belongs to
@@ -526,12 +531,11 @@ int build_mpi_type(
  */
 int parallel_matrix_vector_multiplication(
     size_t m, size_t n, size_t local_m, size_t local_n, double **A, double **x,
-    double **y, double **recv_buffer, double **result_buffer,
-    double *timing_start, double *timing_end, int comm_sz, int my_rank,
-    MPI_Comm comm
+    double **y, double **recv_buffer, double **result_buffer, double *exec_time,
+    double *share_time, int comm_sz, int my_rank, MPI_Comm comm
 ) {
 
-    MPI_Datatype array_of_datatypes[comm_sz];
+    double start = 0.0, finish = 0.0;
 
     /***********************************
      * Custom types
@@ -539,11 +543,20 @@ int parallel_matrix_vector_multiplication(
      * - breaking x into subvectors
      ***********************************/
 
+    MPI_Datatype array_of_datatypes[comm_sz];
+
     for(int i = 0; i < comm_sz; i++)
         build_mpi_type(
             (array_of_datatypes + i), (*A), (*x), local_m, local_n, n,
             local_n * i, local_n * i, my_rank, comm
         );
+
+    /***********************************
+     * Start data sharing timing
+     ***********************************/
+
+    MPI_Barrier(comm);
+    start = MPI_Wtime();
 
     /***********************************
      * Data sharing
@@ -587,11 +600,18 @@ int parallel_matrix_vector_multiplication(
     }
 
     /***********************************
+     * End data sharing timing
+     ***********************************/
+
+    finish = MPI_Wtime();
+    (*share_time) = finish - start;
+
+    /***********************************
      * Start timing the program
      ***********************************/
 
     MPI_Barrier(comm);
-    (*timing_start) = MPI_Wtime();
+    start = MPI_Wtime();
 
     /***********************************
      * local multiplications
@@ -612,7 +632,8 @@ int parallel_matrix_vector_multiplication(
      * End program timing
      ***********************************/
 
-    (*timing_end) = MPI_Wtime();
+    finish = MPI_Wtime();
+    (*exec_time) = finish - start;
 
     /***********************************
      * free custom types
