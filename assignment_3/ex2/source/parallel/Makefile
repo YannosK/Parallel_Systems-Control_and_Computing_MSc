@@ -1,7 +1,6 @@
 .PHONY: all clean
 
 CFLAGS := -s -Wall -Wextra -O0
-MATHFLAGS := -lm
 CC := mpicc
 
 BUILD_DIR := build
@@ -18,11 +17,11 @@ $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
 $(EXECUTABLE): $(OBJ)
-	$(CC) $(CFLAGS) $^ -o $@ $(MATHFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@ $(MATHFLAGS)
+	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)

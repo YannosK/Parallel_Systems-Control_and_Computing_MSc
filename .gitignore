@@ -11,8 +11,8 @@ assignment_1/ex2/__pycache__/*
 assignment_1/ex3/__pycache__/*
 assignment_1/ex4/__pycache__/*
 assignment_2/ex2/scripts/__pycache__/*
-
 assignment_2/ex1/__pycache__/*
+assignment_3/ex2/scripts/__pycache__/*
 
 # binary files
 assignment_1/ex1/bin/*
@@ -23,8 +23,10 @@ assignment_1/ex3/solution_1/build/*
 assignment_1/ex3/solution_2/build/*
 assignment_1/ex4/bin/*
 assignment_2/ex2/build/*
-
 assignment_2/ex1/bin/*
+assignment_3/ex2/source/sequential/build
+assignment_3/ex2/source/parallel/build
+assignment_3/ex2/source/parallel/machines
 
 # help code
 assignment_1/helpcode/*
@@ -32,6 +34,7 @@ template_main.c
 assignment_2/ex2/TO-DO.md
 assignment_3/ex2/TO-DO.md
 assignment_3/ex2/reference
+assignment_3/mpich_di_env_setup
 
 # data
 assignment_1/ex1/data/*
@@ -41,7 +44,6 @@ assignment_2/ex2/results/rows
 assignment_2/ex2/results/columns
 assignment_2/ex2/results/latex_tables/columns_speedup.tex
 assignment_2/ex2/results/latex_tables/rows_speedup.tex
-
 assignment_2/ex1/data/*
 
 #configuration
@@ -49,3 +51,6 @@ assignment_1/ex1/conf.py
 assignment_1/ex2/conf.py
 assignment_1/ex3/conf.py
 assignment_1/ex4/conf.py
+
+#generated junk
+assignment_3/ex2/scripts/*.btr

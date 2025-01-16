@@ -21,7 +21,7 @@ def run_make():
     if result.returncode != 0:
         print(f"Error: make exited with return code {result.returncode}")
 
-def run_exec(n, arg):
+def run_exec(n, arg, machines_file=False):
     '''
     Runs the compiled executable
     passing as input the inserted arguments
@@ -29,9 +29,13 @@ def run_exec(n, arg):
     Args:
     - n : the number of processes
     - arg: a list of string with the CLI arguments
+    - machine_file: wether to execute the MPI program with a file of the available machines
     '''
 
-    app = ['mpiexec', '-n', str(n), '../source/parallel/build/app'] + arg
+    if machines_file == True:
+        app = ['mpiexec', '-f', '../source/parallel/machines', '-n', str(n), '../source/parallel/build/app'] + arg
+    else:
+        app = ['mpiexec', '-n', str(n), '../source/parallel/build/app'] + arg
 
     result = subprocess.run(app, text=True, capture_output=True)
 
@@ -59,6 +63,9 @@ def run_exec(n, arg):
 parser = argparse.ArgumentParser()
 parser.add_argument('processcount', help='The number of processes')
 parser.add_argument('size', help='Number of rows and columns of the square matrix - problem size')
+parser.add_argument('-m', '--machinefile',
+                    action='store_true',
+                    help='Specify wether to execute MPI program with machines file')
 parser.add_argument('-c', '--clean',
                     action='store_true',
                     help='Cleans up possible MPI backtrace files')
@@ -77,13 +84,16 @@ if __name__ == "__main__":
         if int(args.size) % int(args.processcount) != 0:
             raise AssertionError("Processes should be divisible from the problem size")
     
-    arg = [value for key, value in vars(args).items() if key not in ['processcount', 'clean'] and value is not None]
+    arg = [value for key, value in vars(args).items() if key not in ['processcount', 'clean', 'machinefile'] and value is not None]
 
     print('\n**************************\nBuild\n**************************\n')
     run_make()
 
     print('\n**************************\nExecution\n**************************\n')
-    run_exec(args.processcount ,arg)
+    if args.machinefile:
+        run_exec(args.processcount ,arg, True)
+    else:
+        run_exec(args.processcount ,arg)
 
     print('\n')
 
