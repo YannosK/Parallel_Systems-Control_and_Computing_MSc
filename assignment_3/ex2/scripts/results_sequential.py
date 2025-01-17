@@ -59,7 +59,7 @@ def get_results(
 ) -> float:
    '''
    Calls the python `runner_sequential.py` script that builds and runs the program.
-   It returns a tuple with the execution time in seconds.
+   It returns the execution time in seconds.
 
    Args:
    - problemsize (`int`): The number of rows or columns of the square matrix 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
    # Iterators
    #****************#
 
-   sizes = [128, 2048, 32768] # problem size
+   sizes = [128, 2048, 4096, 8192, 16384, 32768] # problem size
 
    #****************#
    # Logic
