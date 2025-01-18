@@ -29,6 +29,7 @@ $(BIN_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)  # Create necessary directories
 	@$(CC) $(CFLAGS) -c $< -o $@ $(LIBS)
 
+# Run on local machine (not for DI)
 exec:
 	HWLOC_COMPONENTS="-gl" HWLOC_HIDE_ERRORS=1 mpirun -np 2 ./bin/main 4 10
 

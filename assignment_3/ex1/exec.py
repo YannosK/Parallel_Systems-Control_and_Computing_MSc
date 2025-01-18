@@ -65,8 +65,10 @@ def run_programs(
             # Execute program and catch output
             output = subprocess.run(
                 [
-                    f"mpirun",
-                    f"-np",
+                    f"mpiexec",
+                    f"-f",
+                    f"machines",
+                    f"-n",
                     f"{element[2]}",
                     f"{root_ex_folder}/bin/main",
                     f"{element[0]}",
