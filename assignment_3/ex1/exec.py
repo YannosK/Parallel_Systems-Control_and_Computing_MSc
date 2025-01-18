@@ -44,38 +44,33 @@ def run_programs(
     iterations: int,
     generations_list: List[int],
     grid_list: List[int],
-    mode_list: List[int],
-    threads_list: List[int],
+    processes_list: List[int],
     file_path: str
 ):
-    """Run program with different generations, grid, mode and threads and
+    """Run program with different generations, grid and processes and
     save data to csv file. The execution is repeated for a number of iterations.
 
     Args:
         iterations (int): Number of iterations to repeat the execution.
         generations_list (List[int]): List of generations to run the program with.
         grid_list (List[int]): List of grid sizes to run the program with .
-        mode_list (List[int]): List of modes to run the program with.
-        threads_list (List[int]): List of thread numbers to run the program with.
+        processes_list (List[int]): List of processes numbers to run the program with.
         file_path (str): The path to the csv file to save the data.
     """
     with open(file_path, "w") as f:
-        f.write(f"iteration;generations;grid;mode;threads;time(s)\n")
+        f.write(f"iteration;generations;grid;processes;time(s)\n")
 
     for iteration in range(iterations):
-        for element in itertools.product(generations_list, grid_list, mode_list, threads_list):
-            # Sequential mode with more than 1 thread is not valid
-            if (element[2] == 0 and element[3] > 1):
-                continue
-
+        for element in itertools.product(generations_list, grid_list, processes_list):
             # Execute program and catch output
             output = subprocess.run(
                 [
+                    f"mpirun",
+                    f"-np",
+                    f"{element[2]}",
                     f"{root_ex_folder}/bin/main",
                     f"{element[0]}",
                     f"{element[1]}",
-                    f"{element[2]}",
-                    f"{element[3]}",
                 ],
                 capture_output=True,
             )
@@ -90,7 +85,6 @@ def run_programs(
                 f.write(f"{element[0]};")
                 f.write(f"{element[1]};")
                 f.write(f"{element[2]};")
-                f.write(f"{element[3]};")
 
                 for line in output:
                     if time_regex.search(line):
@@ -104,13 +98,13 @@ def plot_data(
     read_data_path: str
 ):
     """Plot data from csv file. Each line of the csv file should have the following format:
-    iteration;generation;grid;mode;threads;time(s). The first row should be the header.
+    iteration;generation;grid;processes;time(s). The first row should be the header.
 
     Args:
         read_data_path (str): The path to the csv file with the data.
     """
     data = pd.read_csv(read_data_path, delimiter=";")
-    data_grouped = data.groupby(["grid", "mode", "threads"]).agg(
+    data_grouped = data.groupby(["grid", "processes"]).agg(
         time=("time(s)", "mean"),
         time_max=("time(s)", "max"),
         time_min=("time(s)", "min")
@@ -126,28 +120,24 @@ def plot_data(
         fig.set_size_inches(fig_size_inches, fig_size_inches / golden_ratio)
 
         data_grid = data_grouped.loc[grid]
-        for mode in data_grid.index.levels[0]:
-            data_plot = data_grid.loc[mode]
 
-            yerr_min = np.absolute(data_plot["time"] - data_plot["time_min"])
-            yerr_max = np.absolute(data_plot["time"] - data_plot["time_max"])
-            yerr = np.stack([yerr_min.values, yerr_max.values])
+        yerr_min = np.absolute(data_grid["time"] - data_grid["time_min"])
+        yerr_max = np.absolute(data_grid["time"] - data_grid["time_max"])
+        yerr = np.stack([yerr_min.values, yerr_max.values])
 
-            ax.errorbar(
-                x=data_plot.index,
-                y=data_plot["time"],
-                label=mode == 0 and "Serial" or "Parallel",
-                ms=4,
-                yerr=yerr,
-                fmt="o",
-                elinewidth=1.2,
-                capthick=1.2,
-                capsize=2.4,
-            )
+        ax.errorbar(
+            x=data_grid.index,
+            y=data_grid["time"],
+            ms=4,
+            yerr=yerr,
+            fmt="o",
+            elinewidth=1.2,
+            capthick=1.2,
+            capsize=2.4,
+        )
 
-        ax.set_xlabel("Threads")
+        ax.set_xlabel("Processes")
         ax.set_ylabel("Time (s)")
-        ax.legend()
 
         ax.grid(
             visible=True,
@@ -193,26 +183,25 @@ def results_to_latex(
         read_data_path (str): The path to the csv file with the data.
     """
     data = pd.read_csv(read_data_path, delimiter=";")
-    data_grouped = data.groupby(["grid", "mode", "threads"]).agg(
+    data_grouped = data.groupby(["grid", "processes"]).agg(
         time=("time(s)", "mean"),
     )
 
     for grid in data_grouped.index.levels[0]:
         data_grouped_grid = data_grouped.loc[grid]
 
-        serial_time = data_grouped_grid.loc[0]["time"].iloc[0]
+        serial_time = data_grouped_grid["time"].iloc[0]
         data_grouped_grid["speedup"] = serial_time / data_grouped_grid["time"]
 
-        number_of_threads = data_grouped_grid.index.get_level_values(1)
+        number_of_processes = data_grouped_grid.index
         data_grouped_grid["efficiency"] = data_grouped_grid["speedup"] / \
-            number_of_threads
+            number_of_processes
 
         # Convert indexes to columns
         data_grouped_grid = data_grouped_grid.reset_index()
-        # Remove mode column
-        data_grouped_grid = data_grouped_grid.drop(columns=["mode"])
         # Sort values
-        data_grouped_grid = data_grouped_grid.sort_values(["threads", "time"])
+        data_grouped_grid = data_grouped_grid.sort_values(
+            ["processes", "time"])
 
         latex_table = data_grouped_grid.to_latex(
             index=False,
@@ -237,7 +226,7 @@ def results_to_latex(
 
 # Parse arguments by creating a parser
 parser = argparse.ArgumentParser(
-    description="Run program with different generations, grid, mode and threads and, save data to csv file and produce tables.",
+    description="Run program with different generations, grid and processes and, save data to csv file and produce tables.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
@@ -245,7 +234,7 @@ parser.add_argument(
     "--execute",
     type=int,
     default=0,
-    help="Execute the serial and parallel programs, plot the data and create LaTeX table."
+    help="Execute the parallel program in MPI, plot the data and create LaTeX table."
 )
 parser.add_argument(
     "--plot",
@@ -276,9 +265,8 @@ if __name__ == '__main__':
 
         iterations = 10
         generations_list = [1e3]
-        grid_list = [64, 1024, 4096]
-        mode_list = [0, 1]
-        threads_list = [1, 2, 4, 8, 16]
+        grid_list = [128, 1024, 8192]
+        processes_list = [1, 4, 16, 64, 128]
 
         exec_file_path = f"{save_exec_folder}/{time_string}.csv"
 
@@ -286,8 +274,7 @@ if __name__ == '__main__':
             iterations,
             generations_list,
             grid_list,
-            mode_list,
-            threads_list,
+            processes_list,
             exec_file_path
         )
 
