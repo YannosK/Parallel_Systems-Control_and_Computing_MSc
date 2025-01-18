@@ -129,8 +129,8 @@ if __name__ == "__main__":
    #****************#
 
    sizes = [8192, 16384, 32768] # problem size
-   # processescounts = [1, 4, 16, 64, 128] # MPI process count
-   processescounts = [1, 4, 8] # MPI process count
+   processescounts = [1, 4, 16, 64, 128] # MPI process count
+   # processescounts = [1, 4, 8] # MPI process count
 
    #****************#
    # Constants
