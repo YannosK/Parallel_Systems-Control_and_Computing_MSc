@@ -29,18 +29,36 @@ struct game_of_life_s {
      */
     int *output_ptr;
     /*
+     * The size of the total grid, splitted among the processes, plus the
+     * borders.
+     */
+    int grid;
+    /*
      * The grid rows plus the borders.
      */
     int grid_rows;
-
     /*
      * The grid columns plus the borders.
      */
     int grid_cols;
+    /*
+     * The number of processes the grid is split into.
+     */
+    int comm_sz;
+    /*
+     * The rank of the current process.
+     */
+    int comm_rank;
+    /*
+     * The MPI communicator used to communicate between processes.
+     */
+    MPI_Comm comm;
 };
 
 int gol_init(
-    game_of_life_t *const gol, const int grid_rows, const int grid_cols
+    game_of_life_t *const gol, const int grid, const int grid_rows,
+    const int grid_cols, const int comm_sz, const int comm_rank,
+    const MPI_Comm comm
 ) {
     if((*gol = malloc(sizeof(struct game_of_life_s))) == NULL) {
         return 1;
@@ -68,8 +86,12 @@ int gol_init(
 
     (*gol)->input_ptr = input_ptr;
     (*gol)->output_ptr = output_ptr;
+    (*gol)->grid = grid + 2;
     (*gol)->grid_rows = grid_rows + 2;
     (*gol)->grid_cols = grid_cols + 2;
+    (*gol)->comm_sz = comm_sz;
+    (*gol)->comm_rank = comm_rank;
+    (*gol)->comm = comm;
 
     return 0;
 }
@@ -169,21 +191,22 @@ int parse_input_from_file_to_array(
 }
 
 int gol_parse_input_from_file(
-    const game_of_life_t *const gol, const char *const filename, const int grid,
-    const int comm_sz, const int comm_rank, const MPI_Comm comm
+    const game_of_life_t *const gol, const char *const filename
 ) {
-    if(comm_rank == 0) {
+    if((*gol)->comm_rank == 0) {
         int *input_ptr;
-        if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+        if((input_ptr = calloc((*gol)->grid * (*gol)->grid, sizeof(int))) ==
+           NULL) {
             return 1;
         };
 
-        if(parse_input_from_file_to_array(filename, input_ptr, grid + 2) != 0) {
+        if(parse_input_from_file_to_array(filename, input_ptr, (*gol)->grid) !=
+           0) {
             return 1;
         }
 
 #ifdef DEBUG
-        print_cells(input_ptr, grid + 2, grid + 2, 1);
+        print_cells(input_ptr, (*gol)->grid, (*gol)->grid, 1);
 #endif
 
         memcpy(
@@ -195,10 +218,11 @@ int gol_parse_input_from_file(
         print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
 #endif
 
-        for(int i = 1; i < comm_sz; i++) {
+        for(int i = 1; i < (*gol)->comm_sz; i++) {
             MPI_Send(
                 input_ptr + i * ((*gol)->grid_rows - 2) * (*gol)->grid_cols,
-                (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT, i, 0, comm
+                (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT, i, 0,
+                (*gol)->comm
             );
         }
 
@@ -206,11 +230,11 @@ int gol_parse_input_from_file(
     } else {
         MPI_Recv(
             (*gol)->input_ptr, (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT,
-            0, 0, comm, MPI_STATUS_IGNORE
+            0, 0, (*gol)->comm, MPI_STATUS_IGNORE
         );
 
 #ifdef DEBUG
-        sleep(comm_rank);
+        sleep((*gol)->comm_rank);
         print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
 #endif
     }
@@ -240,20 +264,18 @@ void random_input(int *const input_ptr, const int grid) {
     }
 }
 
-int gol_random_input(
-    const game_of_life_t *const gol, const int grid, const int comm_sz,
-    const int comm_rank, const MPI_Comm comm
-) {
-    if(comm_rank == 0) {
+int gol_random_input(const game_of_life_t *const gol) {
+    if((*gol)->comm_rank == 0) {
         int *input_ptr;
-        if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+        if((input_ptr = calloc((*gol)->grid * (*gol)->grid, sizeof(int))) ==
+           NULL) {
             return 1;
         };
 
-        random_input(input_ptr, grid + 2);
+        random_input(input_ptr, (*gol)->grid);
 
 #ifdef DEBUG
-        print_cells(input_ptr, grid + 2, grid + 2, 1);
+        print_cells(input_ptr, (*gol)->grid, (*gol)->grid, 1);
 #endif
 
         memcpy(
@@ -265,10 +287,11 @@ int gol_random_input(
         print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
 #endif
 
-        for(int i = 1; i < comm_sz; i++) {
+        for(int i = 1; i < (*gol)->comm_sz; i++) {
             MPI_Send(
                 input_ptr + i * ((*gol)->grid_rows - 2) * (*gol)->grid_cols,
-                (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT, i, 0, comm
+                (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT, i, 0,
+                (*gol)->comm
             );
         }
 
@@ -276,11 +299,11 @@ int gol_random_input(
     } else {
         MPI_Recv(
             (*gol)->input_ptr, (*gol)->grid_rows * (*gol)->grid_cols, MPI_INT,
-            0, 0, comm, MPI_STATUS_IGNORE
+            0, 0, (*gol)->comm, MPI_STATUS_IGNORE
         );
 
 #ifdef DEBUG
-        sleep(comm_rank);
+        sleep((*gol)->comm_rank);
         print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 0);
 #endif
     }
@@ -483,18 +506,15 @@ void exchange_south(
     // #endif
 }
 
-void gol_execute(
-    const game_of_life_t *const gol, const int comm_sz, const int comm_rank,
-    const MPI_Comm comm, const int generations
-) {
+void gol_execute(const game_of_life_t *const gol, const int generations) {
     int neighbors;
     int *temp_ptr;
     int comm_rank_north, comm_rank_south;
 
 #ifdef DEBUG
-    MPI_Barrier(comm);
-    sleep(comm_rank);
-    if(comm_rank == 0) {
+    MPI_Barrier((*gol)->comm);
+    sleep((*gol)->comm_rank);
+    if((*gol)->comm_rank == 0) {
         printf("Initial Configuration:\n");
     }
     print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 1);
@@ -502,11 +522,12 @@ void gol_execute(
 
     for(int gen = 0; gen < generations; gen++) {
         exchange_neighbors(
-            comm_rank, &comm_rank_north, &comm_rank_south, comm_sz
+            (*gol)->comm_rank, &comm_rank_north, &comm_rank_south,
+            (*gol)->comm_sz
         );
 
-        exchange_north(gol, comm_rank_north, comm);
-        exchange_south(gol, comm_rank_south, comm);
+        exchange_north(gol, comm_rank_north, (*gol)->comm);
+        exchange_south(gol, comm_rank_south, (*gol)->comm);
 
         // Iterate over non-border cells
         for(int i = 1; i < (*gol)->grid_rows - 1; i++) {
@@ -523,27 +544,25 @@ void gol_execute(
         (*gol)->output_ptr = temp_ptr;
 
 #ifdef DEBUG
-        MPI_Barrier(comm);
-        sleep(comm_rank);
-        if(comm_rank == 0) {
+        MPI_Barrier((*gol)->comm);
+        sleep((*gol)->comm_rank);
+        if((*gol)->comm_rank == 0) {
             printf("After generation %d:\n", gen);
         }
         print_cells((*gol)->input_ptr, (*gol)->grid_rows, (*gol)->grid_cols, 1);
 #endif
 
-        MPI_Barrier(comm);
+        MPI_Barrier((*gol)->comm);
     }
 }
 
-int gol_print(
-    const game_of_life_t *const gol, const int grid, const int comm_sz,
-    const int comm_rank, const MPI_Comm comm
-) {
+int gol_print(const game_of_life_t *const gol) {
     int local_grid_elements = (*gol)->grid_cols * ((*gol)->grid_rows - 2);
 
-    if(comm_rank == 0) {
+    if((*gol)->comm_rank == 0) {
         int *input_ptr;
-        if((input_ptr = calloc((grid + 2) * (grid + 2), sizeof(int))) == NULL) {
+        if((input_ptr = calloc((*gol)->grid * (*gol)->grid, sizeof(int))) ==
+           NULL) {
             return 1;
         };
 
@@ -554,21 +573,21 @@ int gol_print(
 
         int step = (*gol)->grid_cols * ((*gol)->grid_rows - 1);
 
-        for(int i = 1; i < comm_sz; i++) {
+        for(int i = 1; i < (*gol)->comm_sz; i++) {
             MPI_Recv(
-                input_ptr + i * step, local_grid_elements, MPI_INT, i, 0, comm,
-                MPI_STATUS_IGNORE
+                input_ptr + i * step, local_grid_elements, MPI_INT, i, 0,
+                (*gol)->comm, MPI_STATUS_IGNORE
             );
         }
 
-        print_cells(input_ptr, grid + 2, grid + 2, 1);
+        print_cells(input_ptr, (*gol)->grid, (*gol)->grid, 1);
 
         free(input_ptr);
     } else {
 
         MPI_Send(
             (*gol)->input_ptr + (*gol)->grid_cols, local_grid_elements, MPI_INT,
-            0, 0, comm
+            0, 0, (*gol)->comm
         );
     }
 

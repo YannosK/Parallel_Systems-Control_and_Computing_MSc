@@ -27,15 +27,17 @@ int main(int argc, char *argv[]) {
 
     // Initialize MPI
     int comm_sz, comm_rank;
+    MPI_Comm comm = MPI_COMM_WORLD;
+
     MPI_Init(NULL, NULL);
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
-    MPI_Comm_rank(MPI_COMM_WORLD, &comm_rank);
+    MPI_Comm_size(comm, &comm_sz);
+    MPI_Comm_rank(comm, &comm_rank);
 
     // Initialize state
     game_of_life_t gol;
-    ret = gol_init(&gol, grid / comm_sz, grid);
+    ret = gol_init(&gol, grid, grid / comm_sz, grid, comm_sz, comm_rank, comm);
     check_errors(
-        ret, "gol_init", "unable to initialize the game of life", MPI_COMM_WORLD
+        ret, "gol_init", "unable to initialize the game of life", comm
     );
 
 // Fill the input matrix
@@ -45,19 +47,16 @@ int main(int argc, char *argv[]) {
     char filename[max_string_len];
     snprintf(filename, max_string_len, "data/test/%d.txt", grid);
 
-    ret = gol_parse_input_from_file(
-        &gol, filename, grid, comm_sz, comm_rank, MPI_COMM_WORLD
-    );
+    ret = gol_parse_input_from_file(&gol, filename);
     check_errors(
         ret, "gol_parse_input_from_file", "unable to parse input from file",
-        MPI_COMM_WORLD
+        comm
     );
 #endif
 #ifndef DEBUG
-    ret = gol_random_input(&gol, grid, comm_sz, comm_rank, MPI_COMM_WORLD);
+    ret = gol_random_input(&gol);
     check_errors(
-        ret, "gol_random_input", "unable to generate random input",
-        MPI_COMM_WORLD
+        ret, "gol_random_input", "unable to generate random input", comm
     );
 #endif
 
@@ -65,20 +64,18 @@ int main(int argc, char *argv[]) {
     double local_elapsed, elapsed;
 
     // Execute the game of life
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     start = MPI_Wtime();
-    gol_execute(&gol, comm_sz, comm_rank, MPI_COMM_WORLD, generations);
+    gol_execute(&gol, generations);
     end = MPI_Wtime();
     elapsed = end - start;
-    MPI_Reduce(
-        &local_elapsed, &elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD
-    );
+    MPI_Reduce(&local_elapsed, &elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
 
     // TODO: uncomment to print the grid after the execution
-    // ret = gol_print(&gol, grid, comm_sz, comm_rank, MPI_COMM_WORLD);
+    // ret = gol_print(&gol);
     // check_errors(
     //     ret, "gol_print", "unable to print the game of life grid",
-    //     MPI_COMM_WORLD
+    //     comm
     // );
 
     if(comm_rank == 0) {
@@ -88,7 +85,7 @@ int main(int argc, char *argv[]) {
     // Destroy state
     ret = gol_destroy(&gol);
     check_errors(
-        ret, "gol_destroy", "unable to destroy the game of life", MPI_COMM_WORLD
+        ret, "gol_destroy", "unable to destroy the game of life", comm
     );
 
     // Finalize MPI
