@@ -36,16 +36,32 @@ def get_fresh_results() -> str:
    ]
 
    try:
-      with subprocess.Popen(command_seq, stdout=sys.stdout, stderr=sys.stderr, text=True) as result_seq, \
-           subprocess.Popen(command_par, stdout=sys.stdout, stderr=sys.stderr, text=True) as result_par:
+      with subprocess.Popen(command_seq, stdout=sys.stdout, stderr=sys.stderr, text=True) as result_seq:
          result_seq.wait()
-         result_par.wait()
    except KeyboardInterrupt:
       result_seq.terminate()
-      result_par.terminate()
       result_seq.wait(timeout=5)
+      return "Process terminated by user"
+
+   try:
+      with subprocess.Popen(command_par, stdout=sys.stdout, stderr=sys.stderr, text=True) as result_par:
+         result_par.wait()
+   except KeyboardInterrupt:
+      result_par.terminate()
       result_par.wait(timeout=5)
       return "Process terminated by user"
+
+   # try:
+   #    with subprocess.Popen(command_seq, stdout=sys.stdout, stderr=sys.stderr, text=True) as result_seq, \
+   #         subprocess.Popen(command_par, stdout=sys.stdout, stderr=sys.stderr, text=True) as result_par:
+   #       result_seq.wait()
+   #       result_par.wait()
+   # except KeyboardInterrupt:
+   #    result_seq.terminate()
+   #    result_par.terminate()
+   #    result_seq.wait(timeout=5)
+   #    result_par.wait(timeout=5)
+   #    return "Process terminated by user"
 
    return None
 
