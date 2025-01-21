@@ -71,12 +71,10 @@ int main(int argc, char *argv[]) {
     elapsed = end - start;
     MPI_Reduce(&local_elapsed, &elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
 
-    // TODO: uncomment to print the grid after the execution
-    // ret = gol_print(&gol);
-    // check_errors(
-    //     ret, "gol_print", "unable to print the game of life grid",
-    //     comm
-    // );
+    ret = gol_print(&gol);
+    check_errors(
+        ret, "gol_print", "unable to print the game of life grid", comm
+    );
 
     if(comm_rank == 0) {
         printf("Execution time: %.10fs\n", end - start);
