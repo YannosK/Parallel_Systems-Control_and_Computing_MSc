@@ -2,7 +2,7 @@
 
 This exercise studies a data parallel version of a matrix - vector multiplication.
 
-$$A \cdot x = b$$
+$$A \cdot x = y$$
 
 From a sequential program a data-parallel version is created, by partition of the matrix $A$ by columns,
 creating sub-matrices and sub-vectors, assigned for computation in multiple processes.
