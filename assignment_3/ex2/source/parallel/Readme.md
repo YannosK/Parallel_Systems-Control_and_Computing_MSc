@@ -1,4 +1,4 @@
-# Main Program C Code
+# Parallel Program C Code
 
 This directory contains the parallel program of the current exercise.
 

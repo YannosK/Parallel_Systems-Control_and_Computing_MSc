@@ -1,4 +1,4 @@
-# Main Program C Code
+# Sequential Program C Code
 
 This directory contains the sequential program of the current exercise.
 
