@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     size_t local_n; // number of columns of submatrix of A, local to the process
 
     double local_exec_time = 0.0, local_share_time = 0.0, exec_time = 0.0,
-           share_time = 0.0;
+           share_time = 0.0; // timing variables
 
     /***********************************
      *  Arguments check
@@ -200,10 +200,10 @@ void error_check_mpi(
  * in order to break down the vectors and the matrix
  * to local counterparts, for parallel execution
  *
- * @param local_m pointer to variable of number of rows of local_A and elements
- * of local_y
- * @param local_n pointer to variable of number of columns of local_A and
- * elements of local_x
+ * @param local_m pointer to variable of number of rows of local sub-matrix of A
+ * and elements of local sub-vector of y
+ * @param local_n pointer to variable of number of columns of local sub-matrix
+ * of A and elements of local sub-vector of x
  * @param m number of rows of matrix A and elements of vector y
  * @param n number of columns of matrix A and elements of vector x
  * @param comm_sz the number of processes in the MPI communiator
@@ -239,16 +239,18 @@ int problem_size_partitioning(
 
 /********************************************************************************
  * Initialize local matrix and vectors:
- * local memory allocations for variabels of private scope
+ * local memory allocations for variables of private scope
  * to the MPI process.
  *
- * @param recv_buffer pointer to the local buffer that receives the intial data
+ * @param recv_buffer pointer to the local buffer that receives the initial data
  * @param result_buffer pointer to a local part of the result vector y
  * @param A pointer to the buffer that holds the full initial matrix A
  * @param x pointer to the buffer that holds the full initial vector x
  * @param y pointer to the final result buffer
- * @param local_m number of rows of local_A and elements of local_y
- * @param local_n number of columns of local_A and elements of local_x
+ * @param local_m number of rows of sub-matrix of A and elements of sub-vector
+ * of y
+ * @param local_n number of columns of sub-matrix of A and elements of
+ * sub-vector of x
  * @param m number of rows of matrix A and elements of vector y
  * @param n number of columns of matrix A and elements of vector x
  * @param my_rank rank of MPI process calling this function
@@ -261,7 +263,7 @@ int problem_size_partitioning(
  * This function must be called at the beginning of the program,
  * after MPI is initialized and the size of the matrix and vectors is inputted
  * and after the problem is partitioned to local sizes.
- * It assumes that `local_x`, `local_y` and `local_A` are just declared as
+ * It assumes that `recv_buffer` and `result_buffer` are just declared as
  * variables but not pointing anywhere.
  * */
 int local_memory_allocations(
@@ -363,15 +365,17 @@ int local_memory_allocations(
  * and `local_m` and `local_n` as offsets to create
  * a struct type that will contain:
  *
- * - a x's block of size local_n x 1
- *
  * - an A's block of size local_m x local_n
+ *
+ * - a x's block of size local_n x 1
  *
  * @param mpi_datatype_p pointer to the custom MPI datatype
  * @param A pointer to the entire matrix A
  * @param x pointer to the entire vactor x
- * @param local_m number of rows of local_A and elements of local_y
- * @param local_n number of columns of local_A and elements of local_x
+ * @param local_m number of rows of sub-matrix of A and elements of sub-vector
+ * of y
+ * @param local_n number of columns of sub-matrix of A and elements of
+ * sub-vector of x
  * @param n the number of columns of matrix A
  * @param i_x starting index of x
  * @param i_A starting index of A
@@ -389,6 +393,9 @@ int local_memory_allocations(
  *
  * - the indexes of A must be a multiple of local_n but not larger than n -
  * local_n
+ *
+ * - it calls `MPI_Type_commit` in the end so the datatype is ready for use.
+ * You have to manually free the type after use.
  *
  */
 int build_mpi_type(
@@ -416,7 +423,7 @@ int build_mpi_type(
     /***********************************
      * Count of elements
      * @warning
-     * I think one array specifies
+     * One array is regarded
      * as one element
      ***********************************/
 
@@ -436,9 +443,11 @@ int build_mpi_type(
     /***********************************
      * Specifying displacements
      * - run through submatrix of A
-     *  + the elements will be lcoal_A
-     * - in the end add local_x
-     * - prev, next to get differences
+     *  + the elements will be the
+     *    local submatrix
+     * - in the end add go over x
+     *  + the elements will be the
+     *    local subvector
      ***********************************/
 
     MPI_Aint array_of_displacements[local_m + 1];
@@ -490,20 +499,19 @@ int build_mpi_type(
  *
  * A x = y.
  *
- * It first creates the matrix and vector to be multiplied, as well as
- * the result vector in process 0:
- * Matrix A and vector x are initialized with random values.
- *
- * It then partitions the problem into columns and performs
+ * It partitions the matrix A into columns and performs
  * partial multiplication and a final vector addition as a
  * reduction of the locally computed vectors.
  *
- * The function also performs all the necessary memory allocations.
+ * The execution is timed and so is the sharing of the local data
+ * among the MPI processes.
  *
  * @param m number of rows of matrix A and elements of result vector y
  * @param n number of columns of matrix A and elements of vector x
- * @param local_m number of rows of local_A and elements of local_y
- * @param local_n number of columns of local_A and elements of local_x
+ * @param local_m number of rows of sub-matrix of A and elements of sub-vector
+ * of y
+ * @param local_n number of columns of sub-matrix of A and elements of
+ * sub-vector of x
  * @param A pointer to the buffer that holds the full initial matrix A
  * @param x pointer to the buffer that holds the full initial vector x
  * @param y pointer to the final result buffer of vector y

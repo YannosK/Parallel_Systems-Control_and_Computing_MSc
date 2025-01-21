@@ -107,7 +107,7 @@ int matrix_vector_mult(double *A, double *x, double *y, size_t m, size_t n);
 void vector_printer(double *v, size_t n);
 
 /**
- * Prints C-style matrix in the terminal.
+ * Prints C-style matrix  of doubles in the terminal.
  *
  * @param A the name of the already initialized m x n matrix
  * @param m the number of rows of the matrix

@@ -128,10 +128,9 @@ if __name__ == "__main__":
    # Iterators
    #****************#
 
-   sizes = [128, 256, 512, 1024, 2048, 4096] # problem size
-   # sizes = [8192, 16384, 32768] # problem size
-   processescounts = [1, 4, 16, 64, 128] # MPI process count
-   # processescounts = [1, 4, 8] # MPI process count
+   sizes = [8192, 16384, 32768] # problem size
+   processescounts = [1, 4, 16, 64, 128] # MPI process count for Linux DI
+   # processescounts = [1, 4, 8] # MPI process count for my laptop
 
    #****************#
    # Constants

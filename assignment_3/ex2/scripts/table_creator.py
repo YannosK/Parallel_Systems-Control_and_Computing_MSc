@@ -1,7 +1,6 @@
 import argparse
 import csv
 import os
-# import sys
 
 def csv_to_list(filename):
    with open(filename, 'r') as file:
@@ -74,41 +73,40 @@ if __name__ == "__main__":
       sp_file = create_tex_file(main_dir, 'speedup.tex')
       output_files.append(sp_file)
 
-      source = os.path.join(source_dir, 'speedups.csv')
-      if not os.path.exists(source):
-         raise FileNotFoundError(f'File {source} not found')
-      source_files.append(source)
+      sp_source = os.path.join(source_dir, 'speedups.csv')
+      if not os.path.exists(sp_source):
+         raise FileNotFoundError(f'File {sp_source} not found')
+      source_files.append(sp_source)
 
    if args.type == 'all' or 'efficiency':
 
       ef_file = create_tex_file(main_dir, 'efficiency.tex')
       output_files.append(ef_file)
 
-      source = os.path.join(source_dir, 'efficiencies.csv')
-      if not os.path.exists(source):
-         raise FileNotFoundError(f'File {source} not found')
-      source_files.append(source)
+      ef_source = os.path.join(source_dir, 'efficiencies.csv')
+      if not os.path.exists(ef_source):
+         raise FileNotFoundError(f'File {ef_source} not found')
+      source_files.append(ef_source)
 
    if args.type == 'all' or 'exectimes':
       et_file = create_tex_file(main_dir, 'execution_times.tex')
       output_files.append(et_file)
 
-      source = os.path.join(source_dir, 'parallel_execution_timings.csv')
-      if not os.path.exists(source):
-         raise FileNotFoundError(f'File {source} not found')
-      source_files.append(source)
+      et_source = os.path.join(source_dir, 'parallel_execution_timings.csv')
+      if not os.path.exists(et_source):
+         raise FileNotFoundError(f'File {et_source} not found')
+      source_files.append(et_source)
 
    if args.type == 'all' or 'sharetimes':
 
       st_file = create_tex_file(main_dir, 'share_times.tex')
       output_files.append(st_file)
 
-      source = os.path.join(source_dir, 'parallel_datashare_timings.csv')
-      if not os.path.exists(source):
-         raise FileNotFoundError(f'File {source} not found')
-      source_files.append(source)
-
-
+      st_source = os.path.join(source_dir, 'parallel_datashare_timings.csv')
+      if not os.path.exists(st_source):
+         raise FileNotFoundError(f'File {st_source} not found')
+      source_files.append(st_source)
+   
    scaffold = '''
 	 %%%%%%%%%%%%%%%%%%
     {Size}
@@ -140,6 +138,5 @@ if __name__ == "__main__":
                Val_3=value_row[3],
                Val_4=value_row[4],
                Val_5=value_row[5],
-            ).strip()  # Remove extra newlines at the start and end of the block
+            ).strip()
             tex_file.write("\t" + tex_block + "\n")
-
