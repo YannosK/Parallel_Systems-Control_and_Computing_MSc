@@ -11,7 +11,7 @@ The algorithms tested are back-substitution by row and back-substitution by colu
 # Folder Structure
 
 internal structure of root folders:
-- **[scripts](./src/)** : python scripts that automate various processes
+- **[scripts](./scripts/)** : python scripts that automate various processes
 - **[src](./src/)** : has all the C source code, which is the main code of the implementations
 - **[inc](./inc/)** : all the included header files for the C source code
 - **[build](./build/)** : the folder will be created if you build the project. Inside it there is the executable named 'app'
