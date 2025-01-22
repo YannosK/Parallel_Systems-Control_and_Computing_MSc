@@ -28,6 +28,8 @@ assignment_3/ex2/source/sequential/build
 assignment_3/ex2/source/parallel/build
 assignment_3/ex2/source/parallel/machines
 
+assignment_3/ex1/bin/*
+
 # help code
 assignment_1/helpcode/*
 template_main.c
@@ -51,6 +53,9 @@ assignment_3/ex2/results/latex_tables/efficiency.tex
 assignment_3/ex2/results/latex_tables/speedup.tex
 assignment_3/ex2/results/latex_tables/execution_times.tex
 assignment_3/ex2/results/latex_tables/share_times.tex
+
+assignment_3/ex1/data/*
+assignment_3/ex1/machines
 
 #configuration
 assignment_1/ex1/conf.py
