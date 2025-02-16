@@ -10,7 +10,7 @@ dir:
 	mkdir -p $(PROFILE_DIR)
 
 run:
-	nvcc -Iinclude -std=c++11 -o $(BIN_DIR)/$(EXEC_NAME) src/nbody.cu -run
+	nvcc -Iinclude -std=c++11 -o $(BIN_DIR)/$(EXEC_NAME) src/nbody.cu
 
 profile: all
 	nsys profile --stats=true -o $(PROFILE_DIR)/report ./$(BIN_DIR)/$(EXEC_NAME)
